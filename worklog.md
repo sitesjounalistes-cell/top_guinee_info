@@ -450,3 +450,30 @@ neutralisé en base (<img onerror>, <script>, javascript:, iframe
 hostile), identifiants absents du bundle, 10 hits → +0 vue, en-têtes
 de sécurité présents, /article/<slug> 200 avec OG/JSON-LD/canonical,
 404 pour slug inconnu.
+
+════════════════════════════════════════════════════════════════════
+ Tâche 9 — MIGRATION POSTGRESQL (NEON) & PRÉPARATION DU DÉPÔT GITHUB
+════════════════════════════════════════════════════════════════════
+
+- Schéma Prisma basculé de SQLite vers PostgreSQL (provider uniquement —
+  types DateTime déjà portables) ; DATABASE_URL pointe vers Neon avec
+  sslmode=require&pgbouncer=true&connection_limit=5 (pooler Neon)
+- prisma db push : 19 tables créées sur Neon
+- scripts/migrate-to-postgres.ts : copie idempotente de db/custom.db vers
+  PostgreSQL (ordre des FK, dates ms→Date, rubriques par vagues pour
+  l'auto-référence parentId, contrôle final) — 380 lignes migrées
+  (2 comptes, 16 articles, 10 rubriques, 41 tags, 92 logs de vues,
+  émissions/épisodes/pubs/paramètres…)
+- Recherche : mode 'insensitive' (public, admin, messagerie) — PostgreSQL
+  est sensible à la casse par défaut, contrairement à SQLite
+- tsconfig : scripts/ (utilitaires bun) exclu du typecheck Next
+- scripts/start.mjs fiabilisé : le .env du standalone est resynchronisé
+  depuis la racine à chaque démarrage (un ancien chemin SQLite réécrit
+  écrasait l'URL PostgreSQL) ; variables chargées dans le processus ;
+  conversion SQLite absolue uniquement si la valeur EFFECTIVE est file:
+- Nettoyage pré-push (dépôt PUBLIC) : mots de passe de démonstration
+  retirés de LISEZMOI.txt et worklog.md ; le seed génère désormais des
+  mots de passe aléatoires affichés en console (ou SEED_ADMIN_PASSWORD /
+  SEED_JOURNALIST_PASSWORD) — plus aucun identifiant devinable versionné
+- Git : commit initial (182 fichiers, 0 secret — .env, db/, node_modules,
+  .next exclus vérifiés dans le staging)

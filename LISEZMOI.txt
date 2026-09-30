@@ -79,13 +79,20 @@ RÉFÉRENCEMENT (SEO)
 
 MISE EN PRODUCTION
 ──────────────────
-  • Base : remplacer SQLite par PostgreSQL dans prisma/schema.prisma
-    (provider = "postgresql") puis ajuster DATABASE_URL et relancer
-    bun run db:push.
+  • Base : PostgreSQL (Neon) — déjà configurée. DATABASE_URL est lu dans
+    .env (jamais versionné — voir .env.example). Le schéma est appliqué
+    avec :  bunx prisma db push. Pour migrer une base SQLite locale :
+    bun scripts/migrate-to-postgres.ts
   • Build :   bun run build
   • Démarrage (portable Windows/Linux) :  bun run start
-    (scripts/start.mjs localise le serveur standalone, résout le chemin
-    de la base SQLite et complète les fichiers statiques).
+    (scripts/start.mjs localise le serveur standalone, resynchronise le
+    .env et complète les fichiers statiques).
   • Pensez à changer les mots de passe des comptes de la rédaction.
+
+DÉPÔT GITHUB
+────────────
+  https://github.com/sitesjounalistes-cell/top_guinee_info
+  .env (URL Neon + AUTH_SECRET) et db/ sont exclus du dépôt — définissez
+  ces variables sur la machine/hébergeur de production.
 
 © 2026 Topguinee.info — Tous droits réservés.
