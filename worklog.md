@@ -517,3 +517,10 @@ de sécurité présents, /article/<slug> 200 avec OG/JSON-LD/canonical,
 - Variables d'environnement à définir dans le projet Vercel (jamais dans
   le dépôt) : DATABASE_URL (Neon, pooler + sslmode), AUTH_SECRET (≥ 32),
   NEXT_PUBLIC_SITE_URL (domaine final — canonical, OG, sitemap)
+
+Tâche 11 (suite) — build Vercel VERT confirmé par les logs du client
+(Prisma généré, compiled successfully, deployment completed) :
+« Connexion impossible » = URL testée injoignable, pas un souci d'app.
+- src/middleware.ts → src/proxy.ts (convention Next 16, fin du warning
+  « middleware file convention is deprecated ») ; comportement vérifié
+  (Origin étrangère → 403, GET → 200)

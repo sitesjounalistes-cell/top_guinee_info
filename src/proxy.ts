@@ -1,4 +1,5 @@
-// Middleware de sécurité — premier étage pour toutes les routes /api/*.
+// Proxy de sécurité (convention Next 16 — ex-« middleware ») — premier étage
+// pour toutes les routes /api/*.
 //
 // 1. Anti-CSRF d'origine : un navigateur attache toujours l'en-tête Origin
 //    aux requêtes mutatives (POST/PUT/PATCH/DELETE). Si Origin est présent
@@ -59,7 +60,7 @@ function sameOrigin(req: NextRequest): boolean {
   }
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   // 1. Limite de débit globale (premier étage)
   if (rateLimited(`mw:${ipOf(req)}`)) {
     return NextResponse.json({ error: 'Trop de requêtes — réessayez dans un instant.' }, { status: 429 })
