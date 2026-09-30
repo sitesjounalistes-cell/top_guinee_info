@@ -477,3 +477,24 @@ de sécurité présents, /article/<slug> 200 avec OG/JSON-LD/canonical,
   SEED_JOURNALIST_PASSWORD) — plus aucun identifiant devinable versionné
 - Git : commit initial (182 fichiers, 0 secret — .env, db/, node_modules,
   .next exclus vérifiés dans le staging)
+
+════════════════════════════════════════════════════════════════════
+ Tâche 10 — COMPLÉMENTS DE SÉCURITÉ POST-DÉPLOIEMENT
+════════════════════════════════════════════════════════════════════
+
+- Rotation IMMÉDIATE des mots de passe de la rédaction sur la base Neon
+  (scripts/rotate-passwords.ts : scrypt, 18 car. sans ambiguïtés, action
+  tracée au journal d'activité) — les anciens identifiants de seed ne
+  fonctionnent plus (401 vérifié)
+- src/middleware.ts (nouveau) : premier étage pour toutes les routes /api/*
+  • Anti-CSRF d'origine : toute requête mutative (POST/PUT/PATCH/DELETE)
+    portant un Origin étranger au site → 403 (complète SameSite=Lax ;
+    les clients sans Origin — curl, intégrations — passent, l'auth restant
+    le contrôle effectif) — 403 vérifié, Origin légitime acceptée
+  • Limite de débit globale par IP (300/min) bornée en mémoire
+- Login : limite de débit par IP (30 tentatives / 10 min) en complément du
+  verrouillage par e-mail — contient le brute-force distribué
+- Statistiques (§7.7) : agrégats groupBy calculés en base (fin du
+  chargement complet des logs de vues) + select ciblé sur les articles
+  (le corps des articles — champ le plus volumineux — n'est plus chargé
+  pour de simples ventilations)

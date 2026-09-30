@@ -21,19 +21,23 @@ export async function GET(req: Request) {
     // Fenêtre de la période choisie pour les cartes / ventilations
     const sinceStr = days ? dayStr(new Date(now.getTime() - (days - 1) * 24 * 3600 * 1000)) : null
 
-    const logs = await db.articleViewLog.findMany({
-      where: sinceStr ? { day: { gte: sinceStr } } : {},
-      select: { articleId: true, day: true, count: true },
-    })
-
-    const perArticle = new Map<string, number>()
-    const perDay = new Map<string, number>()
-    let views = 0
-    for (const l of logs) {
-      views += l.count
-      perArticle.set(l.articleId, (perArticle.get(l.articleId) || 0) + l.count)
-      if (l.day >= timelineStart) perDay.set(l.day, (perDay.get(l.day) || 0) + l.count)
-    }
+    // Agrégats calculés en base (groupBy) : plus de chargement complet des
+    // logs de vues — le volume transféré ne dépend plus du nombre de jours.
+    const [byArticleAgg, byDayAgg] = await Promise.all([
+      db.articleViewLog.groupBy({
+        by: ['articleId'],
+        where: sinceStr ? { day: { gte: sinceStr } } : {},
+        _sum: { count: true },
+      }),
+      db.articleViewLog.groupBy({
+        by: ['day'],
+        where: { day: { gte: timelineStart } },
+        _sum: { count: true },
+      }),
+    ])
+    const perArticle = new Map<string, number>(byArticleAgg.map(r => [r.articleId, r._sum.count || 0]))
+    const perDay = new Map<string, number>(byDayAgg.map(r => [r.day, r._sum.count || 0]))
+    const views = byArticleAgg.reduce((sum, r) => sum + (r._sum.count || 0), 0)
 
     // Timeline 30 points complétée à zéro
     const timeline: { day: string; views: number }[] = []
@@ -42,10 +46,12 @@ export async function GET(req: Request) {
       timeline.push({ day: d, views: perDay.get(d) || 0 })
     }
 
-    // Articles + ventilations par rubrique / auteur
+    // Articles : select ciblé — ne charge JAMAIS le corps des articles
+    // (champ le plus volumineux) pour de simples ventilations.
     const [articles, episodes] = await Promise.all([
       db.article.findMany({
-        include: {
+        select: {
+          id: true, status: true, readTime: true, youtubeUrl: true,
           rubrique: { select: { id: true, name: true, color: true } },
           author: { select: { id: true, name: true } },
         },

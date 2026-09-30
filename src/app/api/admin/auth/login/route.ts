@@ -6,12 +6,21 @@ import {
   verifyPassword, isLocked, recordFailure, recordSuccess,
   signSession, sessionCookieHeader,
 } from '@/lib/auth'
-import { logAction, serverError } from '@/lib/server/helpers'
+import { logAction, serverError, rateLimit, clientIp } from '@/lib/server/helpers'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
   try {
+    // Limite de débit par IP : complète le verrouillage par e-mail en
+    // contenant le brute-force distribué (30 tentatives / 10 min / IP).
+    if (!rateLimit(`login:${clientIp(req)}`, 30, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives de connexion — réessayez dans quelques minutes.' },
+        { status: 429 },
+      )
+    }
+
     const body = await req.json().catch(() => ({}))
     const email = String(body?.email ?? '').trim().toLowerCase()
     const password = String(body?.password ?? '')
