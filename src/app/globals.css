@@ -1,0 +1,294 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Charte graphique Topguinee.info (§3.2 du cahier des charges) ──
+   Design « premium éditorial » : typographie de presse (Playfair Display),
+   filets fins, coins nets, interactions raffinées. */
+@theme {
+  --color-tg-red: #D21034;
+  --color-tg-red-dark: #a80c28;
+  --color-tg-yellow: #FCD116;
+  --color-tg-yellow-light: #fde047;
+  --color-tg-green: #009460;
+  --color-tg-green-dark: #00734b;
+  --color-tg-navy: #14213D;
+  --color-tg-navy-light: #1e2f56;
+  --color-tg-navy-dark: #0c1526;
+  --color-tg-gray: #F5F5F5;
+  --color-tg-paper: #fafaf9;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.375rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.19 0.03 262);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.03 262);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.03 262);
+  --primary: oklch(0.24 0.055 262); /* bleu marine #14213D */
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.52 0.015 262);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.55 0.212 15); /* rouge #D21034 */
+  --border: oklch(0.912 0.005 262);
+  --input: oklch(0.912 0.005 262);
+  --ring: oklch(0.54 0.13 165); /* vert #009460 */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: #14213D;
+    color: #fff;
+  }
+}
+
+/* ── Utilitaires éditoriaux premium ─────────────────────────── */
+
+/* Conteneur éditorial */
+.tg-container { @apply max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8; }
+
+/* Kicker / surtitre de presse */
+.tg-kicker {
+  @apply text-[11px] font-semibold uppercase tracking-[0.16em];
+}
+
+/* Soulignement animé raffiné pour les titres (effet au survol du groupe) */
+.tg-title-link {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-repeat: no-repeat;
+  background-position: 0 97%;
+  transition: background-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  padding-bottom: 1px;
+}
+.group:hover .tg-title-link,
+a:hover .tg-title-link,
+.tg-title-link:hover {
+  background-size: 100% 1.5px;
+}
+
+/* Filet tricolore vertical (marque) */
+.tg-flag-v {
+  display: inline-flex;
+  flex-direction: column;
+  width: 3px;
+  height: 1em;
+  min-height: 14px;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.tg-flag-v::before { content: ''; flex: 1; background: #D21034; }
+.tg-flag-v i { flex: 1; background: #FCD116; display: block; }
+.tg-flag-v::after { content: ''; flex: 1; background: #009460; }
+
+/* Filet horizontal tricolore (séparateurs de marque) */
+.tg-flag-stripe { display: inline-flex; width: 28px; height: 5px; border-radius: 3px; overflow: hidden; }
+.tg-flag-stripe::before { content: ''; flex: 1; background: #D21034; }
+.tg-flag-stripe::after { content: ''; flex: 1; background: #FCD116; }
+.tg-flag-stripe i { content: ''; flex: 1; background: #009460; display: block; }
+
+/* Bande tricolore pleine largeur (haut de footer / sections majeures) */
+.tg-tricolor-band {
+  display: flex;
+  height: 3px;
+}
+.tg-tricolor-band::before { content: ''; flex: 1; background: #D21034; }
+.tg-tricolor-band i { flex: 1; background: #FCD116; display: block; }
+.tg-tricolor-band::after { content: ''; flex: 1; background: #009460; }
+
+/* ── Corps d'article riche (§5) — mise en page de presse ─────── */
+.tg-prose { @apply text-[16.5px] leading-[1.9] text-zinc-800 font-serif; }
+.tg-prose > * + * { @apply mt-5; }
+.tg-prose h2 {
+  @apply font-sans text-xl md:text-[22px] font-bold text-tg-navy mt-10 mb-2 tracking-tight;
+  @apply border-b border-zinc-200 pb-2;
+}
+.tg-prose h3 { @apply font-sans text-lg font-semibold text-tg-navy mt-8 mb-1.5; }
+.tg-prose p { @apply mb-1; }
+.tg-prose strong { @apply font-semibold text-tg-navy; }
+.tg-prose a { @apply text-tg-green underline underline-offset-[3px] decoration-tg-green/40 hover:decoration-tg-green transition; }
+.tg-prose ul { @apply list-disc pl-6 space-y-1.5 marker:text-tg-red/70; }
+.tg-prose ol { @apply list-decimal pl-6 space-y-1.5 marker:text-tg-red/70 marker:font-semibold; }
+.tg-prose blockquote {
+  @apply border-l-[3px] border-tg-red pl-5 pr-3 py-1 italic text-zinc-700 text-[17.5px] leading-relaxed;
+}
+.tg-prose img { @apply w-full my-7; }
+.tg-prose hr { @apply my-9 border-t border-zinc-200; }
+.tg-prose table { @apply w-full text-sm border-collapse my-6 font-sans; }
+.tg-prose th { @apply bg-tg-navy text-white px-3 py-2.5 text-left font-semibold; }
+.tg-prose td { @apply border border-zinc-200 px-3 py-2; }
+.tg-prose iframe { @apply w-full aspect-video my-7; }
+.tg-prose figure { @apply my-7; }
+.tg-prose figcaption { @apply text-xs text-muted-foreground mt-2 italic text-center; }
+
+/* Lettrine de presse — 1er paragraphe d'un article */
+.tg-dropcap > p:first-of-type::first-letter {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-weight: 700;
+  float: left;
+  font-size: 3.4em;
+  line-height: 0.82;
+  padding-right: 0.12em;
+  padding-top: 0.06em;
+  color: #14213D;
+}
+
+/* ── Bandeau Flash Info défilant (§4.8) ─────────────────────── */
+@keyframes tg-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.tg-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: tg-marquee 50s linear infinite;
+  will-change: transform;
+}
+.tg-marquee-track:hover { animation-play-state: paused; }
+
+/* Apparition au défilement / chargement (§10.4) */
+@keyframes tg-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tg-fade-up { animation: tg-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Apparition décalée en cascade (accueil) */
+.tg-fade-1 { animation-delay: 0.05s; }
+.tg-fade-2 { animation-delay: 0.12s; }
+.tg-fade-3 { animation-delay: 0.2s; }
+
+/* Image en fondu (lazy loading effet) */
+.tg-img-fade { transition: opacity 0.6s ease, filter 0.6s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); filter: blur(8px); opacity: 0.5; transform: scale(1.02); }
+.tg-img-fade.tg-loaded { filter: blur(0); opacity: 1; transform: scale(1); }
+
+/* Scrollbar personnalisée (listes longues back-office) */
+.tg-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.tg-scroll::-webkit-scrollbar-track { background: transparent; }
+.tg-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+.tg-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.tg-scroll-dark::-webkit-scrollbar-thumb { background: #ffffff30; }
+.tg-scroll-dark::-webkit-scrollbar-thumb:hover { background: #ffffff50; }
+
+/* Barre de progression de lecture (§4.11) */
+.tg-read-progress {
+  position: fixed; top: 0; left: 0; height: 2px; z-index: 60;
+  background: linear-gradient(90deg, #D21034, #FCD116, #009460);
+  transition: width 0.08s linear;
+}
+
+/* Éditeur WYSIWYG (§7.5) */
+.tg-editor:empty::before { content: attr(data-placeholder); color: #a1a1aa; }
+.tg-editor:focus { outline: 2px solid #00946033; outline-offset: 2px; border-radius: 4px; }
+.tg-editor img { @apply max-w-full rounded-md my-2; }
+.tg-editor blockquote { @apply border-l-4 border-tg-yellow bg-tg-yellow/10 pl-3 py-1 italic my-2; }
+
+/* Micro-interaction image premium (zoom lent et mesuré) */
+.tg-zoom {
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group:hover .tg-zoom { transform: scale(1.045); }

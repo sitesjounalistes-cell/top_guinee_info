@@ -1,0 +1,20 @@
+# Reverse proxy Topguinee.info — vers le serveur Next.js (port 3000).
+# Sécurité : plus de proxy dynamique arbitraire (l'ancien bloc
+# XTransformPort permettait d'atteindre n'importe quel port local).
+#
+# En production, servir le site en HTTPS (ex. avec un nom de domaine) :
+#   topguinee.info {
+#       encode zstd gzip
+#       reverse_proxy localhost:3000
+#   }
+# Caddy gère alors automatiquement les certificats TLS (ACME).
+:81 {
+	handle {
+		reverse_proxy localhost:3000 {
+			header_up Host {host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}

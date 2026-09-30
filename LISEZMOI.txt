@@ -1,0 +1,91 @@
+═══════════════════════════════════════════════════════════════════
+  TOPGUINEE.INFO — Plateforme média d'information
+  « L'information au-delà du factuel »
+═══════════════════════════════════════════════════════════════════
+
+CONTENU DE L'ARCHIVE
+────────────────────
+  src/            Code source complet (front-office + back-office + API)
+  public/         Fichiers servis : images réelles, logo officiel (/brand),
+                  bannière de partage social (og.jpg), uploads
+  prisma/         Schéma de base de données + seed (contenu de démonstration)
+  db/             Base SQLite prête à l'emploi (articles, émissions, pubs…)
+                  (ignorée par git : ne jamais versionner)
+  scripts/        Utilitaires (import d'images, marque, démarrage production)
+  upload/         Logo officiel original fourni par la rédaction
+  worklog.md      Journal de travail technique du projet
+
+DÉMARRAGE RAPIDE
+────────────────
+  1. Installer Bun (recommandé) :  curl -fsSL https://bun.sh/install | bash
+     (Node.js 20+ fonctionne aussi avec npm)
+  2. Installer les dépendances :   bun install        (ou : npm install)
+  3. Générer le client Prisma :    bun run db:generate
+  4. Lancer le serveur :           bun run dev        (ou : npm run dev)
+  5. Ouvrir :                      http://localhost:3000
+
+  La base est déjà peuplée : aucune migration nécessaire pour démarrer.
+  Si vous partez d'une base vide :  bun run db:push  puis exécutez
+  prisma/seed.ts avec bun.
+
+COMPTES DE LA RÉDACTION
+───────────────────────
+  Administrateur : admin@topguinee.info
+  Journaliste    : journaliste@topguinee.info
+
+  🔒 Dépôt public : les mots de passe ne figurent nulle part dans le code.
+  • Sur la base livrée (db/custom.db) : ils vous ont été transmis hors
+    bande — changez-les dès la première connexion.
+  • Sur un seed frais (bun prisma/seed.ts) : des mots de passe initiaux
+    aléatoires sont générés et affichés une seule fois en console, ou
+    définis via SEED_ADMIN_PASSWORD / SEED_JOURNALIST_PASSWORD.
+
+  Rôles (contrôlés côté serveur, puis masqués dans l'interface) :
+  • ADMIN         — tout, y compris paramètres du site et stockage
+  • CHIEF_EDITOR  — tout le contenu (publication, Une, pubs, messagerie)
+  • JOURNALIST    — rédige ses articles (brouillon/relecture), ne publie
+                    pas et ne touche pas au contenu des autres
+
+  Espace rédaction : bouton « Espace admin » du pied de page, ou #/admin
+
+SÉCURITÉ — À FAIRE AVANT LA MISE EN LIGNE
+─────────────────────────────────────────
+  • Définir AUTH_SECRET (obligatoire en production) : chaîne aléatoire
+    d'au moins 32 caractères —  openssl rand -hex 32  — dans .env.
+    Sans elle, le serveur refuse de démarrer (voir .env.example).
+  • Servir le site en HTTPS (Caddy le gère automatiquement avec un
+    nom de domaine — voir Caddyfile).
+  • Changer les mots de passe des comptes ci-dessus.
+
+STOCKAGE DES MÉDIAS (optionnel, production)
+───────────────────────────────────────────
+  Sans configuration, les images et audios sont stockés localement
+  (public/uploads). Pour externaliser :
+  • Images → Cloudinary   : Paramètres → Stockage (cloud name, clé, secret)
+  • Audio → Google Drive  : Paramètres → Stockage (dossier, compte de
+    service, clé privée) — streaming via /api/public/media/audio/[fileId]
+  • Tester avec le bouton « Tester les connexions ».
+  • Vidéos : liens YouTube insérés dans les articles / direct TV dans
+    Paramètres → FM & TV (YouTube ou Facebook).
+
+RÉFÉRENCEMENT (SEO)
+───────────────────
+  Les articles disposent de vraies pages /article/<slug> rendues côté
+  serveur : titre, description, Open Graph et JSON-LD NewsArticle
+  dynamiques, URL canonique — indexables par Google et Google News.
+  Un sitemap dynamique est servi sur /sitemap.xml (référencé dans
+  robots.txt). Les autres vues du site restent une application à
+  navigation par ancres (#/rubrique/…).
+
+MISE EN PRODUCTION
+──────────────────
+  • Base : remplacer SQLite par PostgreSQL dans prisma/schema.prisma
+    (provider = "postgresql") puis ajuster DATABASE_URL et relancer
+    bun run db:push.
+  • Build :   bun run build
+  • Démarrage (portable Windows/Linux) :  bun run start
+    (scripts/start.mjs localise le serveur standalone, résout le chemin
+    de la base SQLite et complète les fichiers statiques).
+  • Pensez à changer les mots de passe des comptes de la rédaction.
+
+© 2026 Topguinee.info — Tous droits réservés.

@@ -1,0 +1,280 @@
+// Schéma de données Topguinee.info — conforme au cahier des charges §9.2
+// PostgreSQL (Neon) — cf. DATABASE_URL dans .env (sslmode requis).
+// Historique : SQLite en sandbox (db/custom.db) ; migration des données
+// assurée par scripts/migrate-to-postgres.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Utilisateurs & sécurité (§7.1, §7.2) ────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("ADMIN") // ADMIN | CHIEF_EDITOR | JOURNALIST
+  bio          String?
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  articles  Article[]
+  logs      ActivityLog[]
+}
+
+// ─── Contenu éditorial (§5, §7.4, §7.5) ─────────────────────────────────
+
+model Rubrique {
+  id        String   @id @default(cuid())
+  name      String
+  menuLabel String?  // libellé affiché dans le menu (§7.4)
+  slug      String   @unique
+  parentId  String?
+  color     String   @default("#D21034")
+  icon      String   @default("newspaper")
+  imageUrl  String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Rubrique?  @relation("RubriqueTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Rubrique[] @relation("RubriqueTree")
+  articles Article[]  @relation("RubriqueArticles")
+  subOf    Article[]  @relation("SubRubriqueArticles")
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String   @default("")
+  description String   @default("") // ~160 car., SEO / Open Graph
+  body        String   @default("") // HTML enrichi
+  slug        String   @unique
+  coverImage  String?
+  coverAlt    String   @default("")
+  rubriqueId  String
+  subRubriqueId String?
+  authorId    String
+  status      String   @default("DRAFT") // DRAFT | REVIEW | PUBLISHED | UNPUBLISHED | ARCHIVED
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  featuredOrder  Int?   // ordre à la Une (1 = principal, 2..n secondaires) (§4.7)
+  views       Int      @default(0)
+  readTime    Int      @default(3) // minutes estimées
+  youtubeUrl  String?  // vidéo liée
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rubrique    Rubrique  @relation("RubriqueArticles", fields: [rubriqueId], references: [id])
+  subRubrique Rubrique? @relation("SubRubriqueArticles", fields: [subRubriqueId], references: [id])
+  author      User      @relation(fields: [authorId], references: [id])
+  tags        ArticleTag[]
+  media       Media[]
+  flashInfos  FlashInfo[]
+  episodes    Episode[]  @relation("EpisodeLinkedArticle")
+  viewsLog    ArticleViewLog[]
+}
+
+model Tag {
+  id       String      @id @default(cuid())
+  name     String      @unique
+  slug     String      @unique
+  articles ArticleTag[]
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+}
+
+// Journal de vues par jour — alimente les statistiques (§7.7)
+model ArticleViewLog {
+  id        String   @id @default(cuid())
+  articleId String
+  day       String   // YYYY-MM-DD
+  count     Int      @default(1)
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, day])
+}
+
+// ─── Médias (§6) ─────────────────────────────────────────────────────────
+
+model Media {
+  id        String   @id @default(cuid())
+  type      String   // image | video | audio
+  url       String
+  alt       String   @default("")
+  articleId String?
+  meta      String   @default("{}") // JSON : dimensions, durée, taille…
+  createdAt DateTime @default(now())
+
+  article Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+}
+
+// ─── Audio : émissions, épisodes, FM (§4.9, §6.3, §7.6) ──────────────────
+
+model Emission {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  coverImage  String?
+  type        String   @default("PODCAST") // PODCAST | CHRONIQUE | FM
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  episodes Episode[]
+}
+
+model Episode {
+  id         String    @id @default(cuid())
+  emissionId String
+  title      String
+  description String   @default("")
+  audioUrl   String
+  duration   Int       @default(0) // secondes
+  guests     String    @default("")
+  articleId  String?
+  publishAt  DateTime? // programmation
+  isPublished Boolean  @default(false)
+  listens    Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  emission Emission @relation(fields: [emissionId], references: [id], onDelete: Cascade)
+  article  Article? @relation("EpisodeLinkedArticle", fields: [articleId], references: [id], onDelete: SetNull)
+}
+
+// ─── Flash Info (§4.8) ───────────────────────────────────────────────────
+
+model FlashInfo {
+  id          String    @id @default(cuid())
+  text        String
+  articleId   String?   // lien optionnel vers un article
+  priority    Int       @default(1) // 1 = normale, 2 = urgente, 3 = ultime
+  isActive    Boolean   @default(true)
+  publishAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  article Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+}
+
+// ─── Contacts & réseaux sociaux (§7.3) ───────────────────────────────────
+
+model ContactChannel {
+  id       String  @id @default(cuid())
+  type     String  // phone | email | whatsapp | address | other
+  label    String  @default("")
+  value    String
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+}
+
+model SocialLink {
+  id        String  @id @default(cuid())
+  platform  String  // facebook | x | instagram | tiktok | youtube | threads | telegram | other
+  url       String
+  order     Int     @default(0)
+  isActive  Boolean @default(true)
+}
+
+model ContactMessage {
+  id         String   @id @default(cuid())
+  name       String
+  email      String
+  subject    String
+  message    String
+  isRead     Boolean  @default(false)
+  isArchived Boolean  @default(false)
+  receivedAt DateTime @default(now())
+}
+
+// ─── Publicité (§7.9, §8) ────────────────────────────────────────────────
+
+model AdSlot {
+  id       String  @id @default(cuid())
+  name     String
+  position String  // header | footer | sidebar | in_article | intercalaire | habillage
+  format   String  // ex: 728x90, 300x250, 160x600
+  isActive Boolean @default(true)
+
+  campaigns AdCampaign[] @relation("SlotCampaigns")
+}
+
+model Advertiser {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+
+  campaigns AdCampaign[]
+}
+
+model AdCampaign {
+  id          String   @id @default(cuid())
+  slotId      String
+  advertiserId String?
+  title       String
+  imageUrl    String?
+  linkUrl     String   @default("")
+  weight      Int      @default(1) // poids de rotation
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  slot       AdSlot      @relation("SlotCampaigns", fields: [slotId], references: [id], onDelete: Cascade)
+  advertiser Advertiser? @relation(fields: [advertiserId], references: [id], onDelete: SetNull)
+}
+
+// ─── Paramètres, pages éditables, journal (§7.10, §7.11) ─────────────────
+
+model SiteSetting {
+  key       String   @id
+  value     String   @default("")
+  updatedAt DateTime @updatedAt
+}
+
+model EditablePage {
+  key       String   @id // about | legal | privacy
+  title     String
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userLabel String   @default("système")
+  action    String   // CREATE | UPDATE | DELETE | PUBLISH | LOGIN | ... 
+  entity    String   // Article | Rubrique | FlashInfo | ...
+  entityId  String?
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
