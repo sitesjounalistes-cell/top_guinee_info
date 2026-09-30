@@ -498,3 +498,22 @@ de sécurité présents, /article/<slug> 200 avec OG/JSON-LD/canonical,
   chargement complet des logs de vues) + select ciblé sur les articles
   (le corps des articles — champ le plus volumineux — n'est plus chargé
   pour de simples ventilations)
+
+════════════════════════════════════════════════════════════════════
+ Tâche 11 — COMPATIBILITÉ DÉPLOIEMENT VERCEL
+════════════════════════════════════════════════════════════════════
+
+- Symptôme : « No Production Deployment — Your Production Domain is not
+  serving traffic » → aucun build de production réussi sur Vercel
+- Cause : installation fraîche sur Vercel sans génération du client Prisma
+  (en local il était déjà généré par bun run db:generate)
+- Correction package.json :
+  • build  = prisma generate && next build (génération déterministe,
+    quel que soit le gestionnaire de paquets — bun n'exécute pas toujours
+    les lifecycle scripts)
+  • postinstall = prisma generate (ceinture et bretelles)
+- Vercel n'utilise pas scripts/start.mjs (auto-hébergement standalone) :
+  il exécute `next build` puis sert lui-même — rien à changer
+- Variables d'environnement à définir dans le projet Vercel (jamais dans
+  le dépôt) : DATABASE_URL (Neon, pooler + sslmode), AUTH_SECRET (≥ 32),
+  NEXT_PUBLIC_SITE_URL (domaine final — canonical, OG, sitemap)
