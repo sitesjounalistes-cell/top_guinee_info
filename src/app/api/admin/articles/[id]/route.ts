@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireUser, hasMinRole } from '@/lib/auth'
-import { sanitizeRichText, safeMediaUrl, safeHttpUrl } from '@/lib/sanitize'
+import { sanitizeRichText, sanitizeInline, safeMediaUrl, safeHttpUrl } from '@/lib/sanitize'
 import {
   unauth, bad, forbidden, notFound, serverError, logAction, parseDate, computeReadTime,
   uniqueSlugIn, articleFullInclude, toFull, normalizeTagNames, resolveTagId,
@@ -57,10 +57,10 @@ export async function PUT(
       const title = String(body.title).trim()
       if (!title) return bad('Le titre ne peut pas être vide.')
       if (title.length > 250) return bad('Le titre est trop long (250 caractères maximum).')
-      data.title = title
+      data.title = sanitizeInline(title)
     }
-    if (body?.subtitle !== undefined) data.subtitle = String(body.subtitle)
-    if (body?.description !== undefined) data.description = String(body.description)
+    if (body?.subtitle !== undefined) data.subtitle = sanitizeInline(String(body.subtitle))
+    if (body?.description !== undefined) data.description = sanitizeInline(String(body.description))
     if (body?.body !== undefined) {
       // Nettoyage par liste blanche avant stockage (anti-XSS stocké)
       data.body = sanitizeRichText(String(body.body))

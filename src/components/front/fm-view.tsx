@@ -9,6 +9,7 @@ import { FadeImage, AudioPlayer } from '@/components/tg/shared'
 import { EmptyState, ErrorState, useAsyncData } from './common'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Clock, Headphones, MicOff, Radio } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 const TYPE_META: Record<string, { label: string; color: string }> = {
   FM: { label: 'Émission FM', color: '#D21034' },
@@ -17,6 +18,7 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
 }
 
 export function FMView({ fmLabel }: { fmLabel?: string }) {
+  const { t } = useI18n()
   const { data, loading, error, reload } = useAsyncData(() => publicApi.emissions(), 'emissions')
   const label = data?.fmLabel || fmLabel || 'Top FM'
   const emissions = data?.emissions || []
@@ -69,7 +71,7 @@ export function FMView({ fmLabel }: { fmLabel?: string }) {
         ) : emissions.length === 0 ? (
           <EmptyState
             icon={<MicOff size={22} aria-hidden />}
-            title="Aucune émission disponible pour le moment"
+            title={t.emptySection}
             description="Nos micros préparent les prochains épisodes. Revenez très vite — le meilleur de la radio arrive !"
           />
         ) : (
@@ -141,6 +143,7 @@ export function FMView({ fmLabel }: { fmLabel?: string }) {
 // Le lecteur compact évite de répéter le titre déjà affiché en éditorial
 // (les contrôles vitesse/volume apparaissent d'eux-mêmes dès md).
 function EpisodeRow({ ep, emissionTitle, color }: { ep: Episode; emissionTitle: string; color: string }) {
+  const { t } = useI18n()
   return (
     <div>
       <p className="tg-kicker text-[9.5px]" style={{ color }}>{emissionTitle}</p>
@@ -151,7 +154,7 @@ function EpisodeRow({ ep, emissionTitle, color }: { ep: Episode; emissionTitle: 
         <p className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 tabular-nums shrink-0">
           <span className="inline-flex items-center gap-1"><Clock size={11} aria-hidden /> {fmt.duration(ep.duration)}</span>
           <span aria-hidden>·</span>
-          <span className="inline-flex items-center gap-1"><Headphones size={11} aria-hidden /> {fmt.num(ep.listens)} écoutes</span>
+          <span className="inline-flex items-center gap-1"><Headphones size={11} aria-hidden /> {fmt.num(ep.listens)} {t.listens}</span>
           <span aria-hidden>·</span>
           <span>{fmt.short(ep.publishAt)}</span>
         </p>

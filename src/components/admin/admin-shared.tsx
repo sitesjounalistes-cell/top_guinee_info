@@ -2,10 +2,12 @@
 // Composants et utilitaires partagés du back-office Topguinee.info (§7)
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon } from 'lucide-react'
 import { CloudUpload, FileAudio, Inbox, Loader2, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { uploadFile } from '@/lib/api'
 import { FadeImage } from '@/components/tg/shared'
+import { sanitizeInline, stripHtml, type FontClass } from '@/lib/sanitize'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,6 +15,134 @@ import {
   Briefcase, Camera, Coins, Flag, GraduationCap, Heart, Laptop, Leaf,
   Megaphone, Mic, Newspaper, Palette, Trophy, Users,
 } from 'lucide-react'
+
+
+// ─── Champ court enrichi : gras / italique / souligné / police ────
+
+const FONT_CHOICES: { value: FontClass; label: string }[] = [
+  { value: 'font-sans', label: 'Sans (Inter)' },
+  { value: 'font-display', label: 'Éditorial (Playfair)' },
+  { value: 'font-serif', label: 'Serif (Georgia)' },
+  { value: 'font-mono', label: 'Mono' },
+]
+
+/**
+ * Champ texte court avec mise en forme : titre, sous-titre, description…
+ * Le HTML produit ne contient QUE des balises inline autorisées
+ * (liste blanche) ; le champ est assaini au chargement et à la sortie.
+ */
+export function RichInput({ value, onChange, placeholder, ariaLabel, multiline = false, className, maxLengthPlainText }: {
+  value: string
+  onChange: (html: string) => void
+  placeholder?: string
+  ariaLabel?: string
+  multiline?: boolean
+  className?: string
+  maxLengthPlainText?: number
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const lastEmitted = useRef<string>('')
+
+  // Resynchronise le DOM uniquement pour les changements EXTERNES
+  // (chargement d'un article) — jamais pendant la frappe (curseur stable).
+  useEffect(() => {
+    if (ref.current && value !== lastEmitted.current) {
+      ref.current.innerHTML = sanitizeInline(value)
+      lastEmitted.current = value
+    }
+  }, [value])
+
+  const emit = () => {
+    const html = ref.current?.innerHTML || ''
+    lastEmitted.current = html
+    onChange(html)
+  }
+
+  const exec = (cmd: string) => {
+    ref.current?.focus()
+    document.execCommand(cmd)
+    emit()
+  }
+
+  /** Enveloppe la sélection dans un span portant la famille choisie. */
+  const applyFont = (font: FontClass) => {
+    const el = ref.current
+    if (!el) return
+    el.focus()
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed || !el.contains(sel.anchorNode)) {
+      toast.info("Sélectionnez d'abord le texte à mettre en forme.")
+      return
+    }
+    const range = sel.getRangeAt(0)
+    const fragment = range.extractContents()
+    const span = document.createElement('span')
+    span.className = font
+    span.appendChild(fragment)
+    range.insertNode(span)
+    sel.removeAllRanges()
+    emit()
+  }
+
+  const TOOL_BTN = 'h-7 w-7 p-0 inline-flex items-center justify-center rounded-md text-tg-navy hover:bg-tg-gray hover:text-tg-red transition-colors'
+
+  return (
+    <div className={cn('group/rich', className)} data-rich-field={ariaLabel}>
+      <div
+        className="flex items-center gap-0.5 pb-1 opacity-0 focus-within:opacity-100 group-hover/rich:opacity-60 transition-opacity"
+      >
+        <button type="button" className={TOOL_BTN} title="Gras" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('bold')}><BoldIcon size={14} /></button>
+        <button type="button" className={TOOL_BTN} title="Italique" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('italic')}><ItalicIcon size={14} /></button>
+        <button type="button" className={TOOL_BTN} title="Souligné" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('underline')}><UnderlineIcon size={14} /></button>
+        <span className="w-px h-4 bg-zinc-200 mx-0.5" aria-hidden />
+        <select
+          className="h-7 text-[12px] rounded-md border border-zinc-200 bg-white px-1.5 text-tg-navy hover:border-tg-red/40 cursor-pointer"
+          title="Famille de police"
+          defaultValue=""
+          onChange={(e) => { if (e.target.value) applyFont(e.target.value as FontClass); e.target.selectedIndex = 0 }}
+        >
+          <option value="" disabled>Police…</option>
+          {FONT_CHOICES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </select>
+      </div>
+      <div
+        ref={ref}
+        className="rich-input w-full min-w-0 outline-none whitespace-pre-wrap break-words"
+        style={multiline ? { minHeight: '5.5rem' } : undefined}
+        contentEditable
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline={multiline || undefined}
+        aria-label={ariaLabel}
+        data-placeholder={placeholder}
+        onInput={emit}
+        onBlur={() => {
+          // Assainit les collages (Word, web) dès la sortie du champ
+          const clean = sanitizeInline(ref.current?.innerHTML || '')
+          if (ref.current) ref.current.innerHTML = clean
+          lastEmitted.current = clean
+          onChange(clean)
+        }}
+        onKeyDown={(e) => {
+          if (!multiline && e.key === 'Enter') e.preventDefault()
+          if (maxLengthPlainText) {
+            const plain = stripHtml(ref.current?.innerText || '')
+            if (plain.length >= maxLengthPlainText && e.key !== 'Backspace' && e.key !== 'Delete' &&
+                !e.ctrlKey && !e.metaKey && e.key.length === 1) {
+              e.preventDefault()
+            }
+          }
+        }}
+        onPaste={(e) => {
+          // Coller en texte brut : jamais de styles/HTML externes involontaires
+          e.preventDefault()
+          const text = e.clipboardData.getData('text/plain')
+          document.execCommand('insertText', false, text)
+        }}
+      />
+    </div>
+  )
+}
 
 // ─── Carte statistique (§7.1) ─────────────────────────────────────
 

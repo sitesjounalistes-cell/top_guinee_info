@@ -5,18 +5,20 @@
 // NewsArticle, URL canonique — indexable par les moteurs et les agrégateurs
 // (Google News), partageable avec un aperçu riche sur les réseaux sociaux.
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { db } from '@/lib/db'
 import {
   visibleWhere, articleFullInclude, articleCardInclude, toFull, toCard,
   getSettings, pickBanner, clientIp, isBot, oncePerWindow, dayStr,
 } from '@/lib/server/helpers'
-import { safeHttpUrl } from '@/lib/sanitize'
+import { safeHttpUrl, stripHtml } from '@/lib/sanitize'
+import { getDict, isLang } from '@/lib/i18n/dicts'
+import { translateCard, translateCards, translateHtml, translateText, translateTexts } from '@/lib/server/translate'
 import type { ArticleCardData } from '@/lib/types'
-import { FadeImage, FlashTicker, RichText, ShareButtons, YouTubeEmbed, ArticleCard } from '@/components/tg/shared'
+import { FadeImage, FlashTicker, RichInline, RichText, ShareButtons, YouTubeEmbed, ArticleCard } from '@/components/tg/shared'
 import { ImpressionBanner } from '@/components/front/common'
-import { ArrowRight, Clock, Eye } from 'lucide-react'
+import { ArrowRight, Clock, Eye, Languages } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,10 +27,15 @@ const RANK_COLORS = ['#D21034', '#c99700', '#00734B', '#14213D', '#a80c28']
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://topguinee.info'
 
 // Formatage léger (la page est un composant serveur : pas d'import client)
-function fmtDateTime(d?: string | null): string {
+const DATE_LOCALES: Record<string, string> = {
+  fr: 'fr-FR', en: 'en-GB', es: 'es-ES', it: 'it-IT', ar: 'ar-EG', zh: 'zh-CN',
+}
+
+function fmtDateTime(d?: string | null, lang = 'fr'): string {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-    + ' à ' + new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const loc = DATE_LOCALES[lang] || 'fr-FR'
+  return new Date(d).toLocaleDateString(loc, { day: '2-digit', month: 'short', year: 'numeric' })
+    + ' · ' + new Date(d).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })
 }
 function fmtNum(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace('.0', '') + ' M'
@@ -56,8 +63,8 @@ export async function generateMetadata(
   if (!article) {
     return { title: { absolute: `Article introuvable — ${settings.siteName}` }, robots: { index: false } }
   }
-  const title = `${article.title} — ${settings.siteName}`
-  const description = article.description || article.subtitle || undefined
+  const title = `${stripHtml(article.title)} — ${settings.siteName}`
+  const description = stripHtml(article.description || article.subtitle) || undefined
   const image = article.coverImage || settings.seoImage || undefined
   return {
     // absolute : le template de titre du layout racine ne doit pas suffixer
@@ -88,10 +95,19 @@ export async function generateMetadata(
   }
 }
 
+/** Langue du visiteur (cookie posé par le sélecteur du site). */
+async function visitorLang(): Promise<string> {
+  const jar = await cookies()
+  const v = jar.get('tg_lang')?.value || ''
+  return isLang(v) ? v : 'fr'
+}
+
 export default async function ArticlePage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
+  const lang = await visitorLang()
+  const t = getDict(lang)
   const raw = await loadArticle(slug)
   if (!raw) notFound()
 
@@ -162,6 +178,26 @@ export default async function ArticlePage(
     for (const a of recent) similar.push(toCard(a))
   }
 
+  const mostReadCards = mostRead.map(toCard)
+
+  // i18n : contenus traduits avec cache en base (dégradation gracieuse
+  // en français si le service est indisponible)
+  if (lang !== 'fr') {
+    await Promise.all([
+      translateCard(article, lang),
+      (async () => { article.body = await translateHtml(article.body, lang) })(),
+      translateCards(similar, lang),
+      translateCards(mostReadCards, lang),
+      (async () => { settings.slogan = await translateText(settings.slogan, lang) })(),
+      translateTexts(rubriques.map(r => r.name), lang).then(tr => {
+        rubriques.forEach((r, i) => { r.name = tr[i] ?? r.name })
+      }),
+      translateTexts(flash.map(f => f.text), lang).then(tr => {
+        flash.forEach((f, i) => { f.text = tr[i] ?? f.text })
+      }),
+    ])
+  }
+
   const rub = article.rubrique
   const rubColor = rub?.color || '#D21034'
   const authorName = article.author?.name || 'Rédaction Topguinee'
@@ -172,7 +208,7 @@ export default async function ArticlePage(
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
-    headline: article.title,
+    headline: stripHtml(article.title),
     description: article.description || article.subtitle || undefined,
     image: article.coverImage ? [article.coverImage] : undefined,
     datePublished: article.publishedAt,
@@ -187,6 +223,8 @@ export default async function ArticlePage(
   return (
     <div className="min-h-screen bg-white text-tg-navy">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* Langue & direction du document (le layout racine est partagé avec la SPA) */}
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang=${JSON.stringify(lang)};document.documentElement.dir=${JSON.stringify(lang === 'ar' ? 'rtl' : 'ltr')}` }} />
 
       {/* ── Masthead sobre (retour SPA en un clic) ───────────────── */}
       <header className="border-b border-zinc-200">
@@ -204,8 +242,8 @@ export default async function ArticlePage(
             </span>
           </a>
         </div>
-        <nav className={`${SHELL} flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-zinc-100 py-3`} aria-label="Rubriques">
-          <a href="/" className="text-[12px] font-semibold uppercase tracking-[0.12em] text-tg-navy hover:text-tg-red transition-colors">Accueil</a>
+        <nav className={`${SHELL} flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-zinc-100 py-3`} aria-label={t.rubrics}>
+          <a href="/" className="text-[12px] font-semibold uppercase tracking-[0.12em] text-tg-navy hover:text-tg-red transition-colors">{t.home}</a>
           {rubriques.map(r => (
             <a
               key={r.id}
@@ -224,10 +262,10 @@ export default async function ArticlePage(
       <article>
         <header className={`${SHELL} pt-5 md:pt-8`}>
           <nav aria-label="Fil d'Ariane" className="flex items-center flex-wrap gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-zinc-400">
-            <a href="/" className="hover:text-tg-red transition-colors">Accueil</a>
+            <a href="/" className="hover:text-tg-red transition-colors">{t.home}</a>
             {rub && (<><span aria-hidden>/</span><a href={`/#/rubrique/${rub.slug}`} className="hover:text-tg-red transition-colors">{rub.name}</a></>)}
             <span aria-hidden>/</span>
-            <span className="text-tg-navy">{article.title.length > 46 ? `${article.title.slice(0, 46)}…` : article.title}</span>
+            {(() => { const t = stripHtml(article.title); return <span className="text-tg-navy">{t.length > 46 ? `${t.slice(0, 46)}…` : t}</span> })()}
           </nav>
 
           <div className="mt-6 md:mt-8 max-w-[860px]">
@@ -240,11 +278,11 @@ export default async function ArticlePage(
               </a>
             )}
             <h1 className="mt-3 font-display font-bold text-[30px] md:text-[40px] leading-[1.12] tracking-tight text-tg-navy text-balance">
-              {article.title}
+              <RichInline html={article.title} />
             </h1>
             {article.subtitle && (
               <p className="mt-4 font-display italic text-lg md:text-xl text-zinc-500 leading-relaxed text-pretty">
-                {article.subtitle}
+                <RichInline html={article.subtitle} />
               </p>
             )}
           </div>
@@ -257,14 +295,14 @@ export default async function ArticlePage(
               <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-zinc-500">
                 <span className="font-semibold text-tg-navy">{authorName}</span>
                 <span aria-hidden className="select-none text-zinc-300">·</span>
-                <span>{fmtDateTime(article.publishedAt)}</span>
+                <span>{fmtDateTime(article.publishedAt, lang)}</span>
                 <span aria-hidden className="select-none text-zinc-300">·</span>
                 <span className="inline-flex items-center gap-1.5">
-                  <Clock size={13} aria-hidden className="text-zinc-400" /> {article.readTime} min de lecture
+                  <Clock size={13} aria-hidden className="text-zinc-400" /> {article.readTime} {t.minutesRead}
                 </span>
                 <span aria-hidden className="select-none text-zinc-300">·</span>
                 <span className="inline-flex items-center gap-1.5">
-                  <Eye size={13} aria-hidden className="text-zinc-400" /> {fmtNum(article.views)} vues
+                  <Eye size={13} aria-hidden className="text-zinc-400" /> {fmtNum(article.views)} {t.views}
                 </span>
               </div>
             </div>
@@ -272,6 +310,11 @@ export default async function ArticlePage(
               <ShareButtons url={pageUrl} title={article.title} />
             </div>
           </div>
+          {lang !== 'fr' && (
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-medium text-zinc-500">
+              <Languages size={12} aria-hidden /> {t.translationNotice}
+            </p>
+          )}
         </header>
 
         <figure className={`${SHELL} mt-7 md:mt-10`}>
@@ -309,10 +352,10 @@ export default async function ArticlePage(
                 )}
 
                 {article.tags && article.tags.length > 0 && (
-                  <div className="border-t border-zinc-200 pt-7" aria-label="Sujets liés">
+                  <div className="border-t border-zinc-200 pt-7" aria-label={t.relatedTopics}>
                     <p className="tg-kicker flex items-center gap-2 text-zinc-400">
                       <span className="h-1.5 w-1.5 rotate-45 bg-tg-navy/60" aria-hidden />
-                      Sujets liés
+                      {t.relatedTopics}
                     </p>
                     <div className="mt-3.5 flex flex-wrap gap-2">
                       {article.tags.map(t => (
@@ -330,14 +373,14 @@ export default async function ArticlePage(
               </div>
             </div>
 
-            <aside className="mt-12 lg:mt-0 space-y-9 lg:sticky lg:top-24 lg:self-start" aria-label="Suggestions de lecture">
+            <aside className="mt-12 lg:mt-0 space-y-9 lg:sticky lg:top-24 lg:self-start" aria-label={t.alsoRead}>
               {bannerSidebar && <ImpressionBanner banner={bannerSidebar} position="sidebar" />}
 
               {similar.length > 0 && (
                 <section aria-label="À lire aussi">
                   <h2 className="flex items-center gap-2.5 border-b border-zinc-200 pb-3 font-display text-[18px] font-bold tracking-tight text-tg-navy">
                     <span className="h-2 w-2 shrink-0 rotate-45" style={{ backgroundColor: rubColor }} aria-hidden />
-                    À lire aussi
+                    {t.alsoRead}
                   </h2>
                   <div className="divide-y divide-zinc-200">
                     {similar.slice(0, 3).map(a => (
@@ -350,13 +393,13 @@ export default async function ArticlePage(
               )}
 
               {mostRead.length > 0 && (
-                <section aria-label="Les articles les plus lus">
+                <section aria-label={t.mostRead}>
                   <h2 className="flex items-center gap-2.5 border-b border-zinc-200 pb-3 font-display text-[18px] font-bold tracking-tight text-tg-navy">
                     <span className="h-2 w-2 shrink-0 rotate-45 bg-tg-red" aria-hidden />
-                    Les plus lus
+                    {t.mostRead}
                   </h2>
                   <ol className="divide-y divide-zinc-200">
-                    {mostRead.map((a, i) => (
+                    {mostReadCards.map((a, i) => (
                       <li key={a.id} className="flex items-start gap-2.5 py-3.5 first:pt-4 last:pb-0">
                         <span
                           aria-hidden
@@ -366,7 +409,7 @@ export default async function ArticlePage(
                           {i + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <ArticleCard article={toCard(a)} variant="small" />
+                          <ArticleCard article={a} variant="small" />
                         </div>
                       </li>
                     ))}
@@ -379,17 +422,17 @@ export default async function ArticlePage(
       </article>
 
       {similar.length > 0 && (
-        <section className="mt-14 md:mt-20 bg-tg-paper" aria-label="Articles similaires">
+        <section className="mt-14 md:mt-20 bg-tg-paper" aria-label={t.alsoRead}>
           <div className="tg-tricolor-band" aria-hidden><i /></div>
           <div className={`${SHELL} py-12 md:py-16`}>
             <div className="flex items-end justify-between gap-4 border-b-2 border-tg-navy pb-3 mb-6">
-              <h2 className="font-display text-[22px] md:text-[26px] font-bold tracking-tight text-tg-navy leading-none">À lire aussi</h2>
+              <h2 className="font-display text-[22px] md:text-[26px] font-bold tracking-tight text-tg-navy leading-none">{t.alsoRead}</h2>
               {rub && (
                 <a
                   href={`/#/rubrique/${rub.slug}`}
                   className="group/link inline-flex items-center gap-1.5 tg-kicker text-tg-red hover:text-tg-red-dark transition-colors py-1"
                 >
-                  Toute la rubrique
+                  {t.allRubric}
                   <ArrowRight size={13} aria-hidden className="transition-transform duration-300 group-hover/link:translate-x-1" />
                 </a>
               )}
@@ -409,11 +452,11 @@ export default async function ArticlePage(
           <a href="/" className="font-display font-bold text-tg-navy">
             Topguinee<span className="text-tg-red">.</span><span className="text-tg-yellow">info</span>
           </a>
-          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-zinc-500" aria-label="Pages du site">
-            <a href="/#/about" className="hover:text-tg-red transition-colors">À propos</a>
-            <a href="/#/contact" className="hover:text-tg-red transition-colors">Contact</a>
-            <a href="/#/legal" className="hover:text-tg-red transition-colors">Mentions légales</a>
-            <a href="/#/privacy" className="hover:text-tg-red transition-colors">Confidentialité</a>
+          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-zinc-500" aria-label={t.theMedia}>
+            <a href="/#/about" className="hover:text-tg-red transition-colors">{t.about}</a>
+            <a href="/#/contact" className="hover:text-tg-red transition-colors">{t.contact}</a>
+            <a href="/#/legal" className="hover:text-tg-red transition-colors">{t.legal}</a>
+            <a href="/#/privacy" className="hover:text-tg-red transition-colors">{t.privacy}</a>
           </nav>
           <p className="text-[11px] text-zinc-400">© {new Date().getFullYear()} Topguinee.info — Toute reproduction sans autorisation est interdite.</p>
         </div>

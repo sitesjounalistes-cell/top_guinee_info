@@ -13,6 +13,7 @@ import { ArticleCard, Breadcrumb, Pagination, SectionHeader } from '@/components
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { Eye } from 'lucide-react'
 import {
   CardSkeleton, EmptyState, ErrorState, ImpressionBanner, RubriqueIcon,
@@ -24,6 +25,14 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: 'Plus anciens' },
   { value: 'views', label: 'Plus lus' },
 ]
+
+function sortLabels(t: { sortRecent: string; sortOldest: string; sortViews: string }) {
+  return [
+    { value: 'recent', label: t.sortRecent },
+    { value: 'oldest', label: t.sortOldest },
+    { value: 'views', label: t.sortViews },
+  ]
+}
 
 const RANK_COLORS = ['#D21034', '#c99700', '#00734B', '#14213D', '#a80c28']
 
@@ -90,6 +99,7 @@ function FilterChip({ to, active, activeColor, children }: {
 }
 
 export function RubriqueView({ slug, sub, page, sort }: { slug: string; sub?: string; page: number; sort: string }) {
+  const { t } = useI18n()
   // Métadonnées de rubrique + sous-rubriques + pubs (cache partagé)
   const { data: home } = useAsyncData(getHomeCached, 'home')
   const rubrique = useMemo(
@@ -196,7 +206,7 @@ export function RubriqueView({ slug, sub, page, sort }: { slug: string; sub?: st
               <SelectValue placeholder="Trier" />
             </SelectTrigger>
             <SelectContent>
-              {SORT_OPTIONS.map((o) => (
+              {sortLabels(t).map((o) => (
                 <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>

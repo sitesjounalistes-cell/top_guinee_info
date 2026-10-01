@@ -7,7 +7,8 @@ import { navigate } from '@/lib/router'
 import { sanitizeRichText, safeHttpUrl } from '@/lib/sanitize'
 import { youtubeId, YouTubeEmbed, FadeImage, RichText } from '@/components/tg/shared'
 import type { ArticleFull, ArticleStatus, Rubrique, TgUser } from '@/lib/types'
-import { ImageDropzone, toInputDate } from './admin-shared'
+import { ImageDropzone, RichInput, toInputDate } from './admin-shared'
+import { stripHtml, type FontClass } from '@/lib/sanitize'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   AlignCenter, AlignLeft, ArrowLeft, AudioLines, Bold, CalendarClock, Check, Clock,
-  Copy, Eye, Heading2, Heading3, ImagePlus, Italic, Link2, List, ListOrdered,
+  Copy, Eye, Heading2, Heading3, ImagePlus, Italic, Link2, List, ListOrdered, Type,
   Loader2, Minus, Quote, Save, Send, Table2, Underline, Undo2, Youtube,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -243,7 +244,7 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
     if (loading) return
     const json = JSON.stringify(makePayload(currentFields()))
     if (json === lastSavedRef.current) return
-    if (!title.trim() || !rubriqueId) return
+    if (!stripHtml(title).trim() || !rubriqueId) return
     const t = setTimeout(() => {
       void persist(undefined, { silent: true }).then((ok) => {
         if (ok && JSON.stringify(makePayload(currentFields())) !== lastSavedRef.current) {
@@ -281,6 +282,27 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
     saveSelection()
     syncBody()
   }, [restoreSelection, saveSelection, syncBody])
+
+  /** Enveloppe la sélection du corps dans la famille de police choisie. */
+  const applyFontToBody = (font: FontClass) => {
+    const el = editorRef.current
+    if (!el) return
+    restoreSelection()
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed || !el.contains(sel.anchorNode)) {
+      toast.info("Sélectionnez d'abord le texte à mettre en forme.")
+      return
+    }
+    const range = sel.getRangeAt(0)
+    const fragment = range.extractContents()
+    const span = document.createElement('span')
+    span.className = font
+    span.appendChild(fragment)
+    range.insertNode(span)
+    sel.removeAllRanges()
+    saveSelection()
+    syncBody()
+  }
 
   const insertHtml = useCallback((html: string) => {
     restoreSelection()
@@ -356,7 +378,7 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
 
   // ── Actions statut ───────────────────────────────────────────────
   const requestPublish = async () => {
-    if (!title.trim()) { toast.error('Renseignez le titre avant de publier.'); return }
+    if (!stripHtml(title).trim()) { toast.error('Renseignez le titre avant de publier.'); return }
     if (!rubriqueId) { setNoRubriqueOpen(true); return }
     const ok = await persist({ status: 'PUBLISHED' }, { onSuccessStatus: 'PUBLISHED' })
     if (ok) {
@@ -364,7 +386,7 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
       toast.success(prog ? 'Article programmé' : 'Article publié !', {
         description: prog
           ? `Il sera mis en ligne le ${fmt.dateTime(scheduledIso)}.`
-          : '« ' + title.trim() + ' » est désormais en ligne sur le site.',
+          : '« ' + stripHtml(title).trim() + ' » est désormais en ligne sur le site.',
       })
     }
   }
@@ -401,6 +423,18 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
       <button type="button" className={TOOL_BTN} title="Titre de section (H2)" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('formatBlock', '<h2>')}><Heading2 size={15} /></button>
       <button type="button" className={TOOL_BTN} title="Sous-titre (H3)" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('formatBlock', '<h3>')}><Heading3 size={15} /></button>
       <button type="button" className={TOOL_BTN} title="Citation" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('formatBlock', '<blockquote>')}><Quote size={15} /></button>
+      <select
+        className="h-7 my-0.5 text-[12px] rounded-md border border-zinc-200 bg-white px-1.5 text-tg-navy hover:border-tg-red/40 cursor-pointer"
+        title="Famille de police de la sélection"
+        defaultValue=""
+        onChange={(e) => { if (e.target.value) applyFontToBody(e.target.value as FontClass); e.target.selectedIndex = 0 }}
+      >
+        <option value="" disabled>Police…</option>
+        <option value="font-sans">Sans (Inter)</option>
+        <option value="font-display">Éditorial (Playfair)</option>
+        <option value="font-serif">Serif (Georgia)</option>
+        <option value="font-mono">Mono</option>
+      </select>
       <span className="w-px h-5 bg-zinc-200 mx-1" aria-hidden />
       <button type="button" className={TOOL_BTN} title="Liste à puces" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertUnorderedList')}><List size={15} /></button>
       <button type="button" className={TOOL_BTN} title="Liste numérotée" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertOrderedList')}><ListOrdered size={15} /></button>
@@ -429,7 +463,7 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
     )
   }
 
-  const descOk = description.length <= 160
+  const descOk = stripHtml(description).length <= 160
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -471,7 +505,7 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1.5 rounded-full">
-              <Clock size={13} /> {title.trim() && rubriqueId ? 'Brouillon en cours' : 'Titre + rubrique requis pour l\'autosave'}
+              <Clock size={13} /> {stripHtml(title).trim() && rubriqueId ? 'Brouillon en cours' : 'Titre + rubrique requis pour l\'autosave'}
             </span>
           )}
         </div>
@@ -485,37 +519,43 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
         {/* ── Colonne principale ── */}
         <div className="space-y-5 min-w-0">
           <div className="bg-card rounded-2xl border border-zinc-200 p-5 space-y-4">
-            <div>
-              <Input
+            <div className="divide-y divide-zinc-100">
+              {/* Titre et sous-titre enrichis : gras, italique, souligné et
+                  famille de police sélectionnables (barre au focus). */}
+              <RichInput
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={setTitle}
                 placeholder="Titre de l'article…"
-                className="text-xl md:text-2xl font-bold h-auto py-2.5 border-none shadow-none px-0 focus-visible:ring-0 placeholder:text-zinc-300"
-                aria-label="Titre de l'article"
+                ariaLabel="Titre de l'article"
+                className="text-xl md:text-2xl font-bold [&_.rich-input]:py-1"
               />
-              <Input
+              <RichInput
                 value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
+                onChange={setSubtitle}
                 placeholder="Sous-titre (accroche affichée sous le titre)…"
-                className="text-sm border-none shadow-none px-0 focus-visible:ring-0 placeholder:text-zinc-300"
-                aria-label="Sous-titre"
+                ariaLabel="Sous-titre"
+                className="text-sm pt-2 [&_.rich-input]:italic"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <Label htmlFor="ed-desc" className="text-xs text-muted-foreground">Description / chapeau (moteurs de recherche, cartes de partage)</Label>
+                <Label className="text-xs text-muted-foreground">Description / chapeau (moteurs de recherche, cartes de partage)</Label>
                 <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold tabular-nums', descOk ? 'text-tg-green' : 'text-tg-red')}>
                   <span className={cn('w-1.5 h-1.5 rounded-full', descOk ? 'bg-tg-green' : 'bg-tg-red')} />
-                  {description.length}/160
+                  {stripHtml(description).length}/160
                 </span>
               </div>
-              <Textarea
-                id="ed-desc" rows={3} value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Résumé court de l'article (160 caractères recommandés)…"
-                className={cn('resize-none', !descOk && 'border-tg-red/50 focus-visible:ring-tg-red/30')}
-              />
+              <div className={cn('rounded-lg border border-zinc-200 px-3 py-2 text-sm', !descOk && 'border-tg-red/50')}>
+                <RichInput
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Résumé court de l'article (160 caractères recommandés)…"
+                  ariaLabel="Description de l'article"
+                  multiline
+                  maxLengthPlainText={400}
+                />
+              </div>
             </div>
           </div>
 

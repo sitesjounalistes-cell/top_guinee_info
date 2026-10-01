@@ -68,6 +68,19 @@ STOCKAGE DES MÉDIAS (optionnel, production)
   • Vidéos : liens YouTube insérés dans les articles / direct TV dans
     Paramètres → FM & TV (YouTube ou Facebook).
 
+TRADUCTION DU SITE (6 LANGUES)
+──────────────────────────────
+  Sélecteur de langue dans la barre supérieure : Français, English,
+  Español, Italiano, العربية (interface RTL), 中文.
+  • Interface : dictionnaires intégrés (src/lib/i18n) — instantanés.
+  • Contenus (articles, rubriques, flashs, émissions, pages) : traduits
+    côté serveur avec cache en base (table TranslationCache) — chaque
+    segment n'est traduit qu'une fois. Sans configuration, le service
+    gratuit MyMemory est utilisé ; pour de gros volumes, renseignez un
+    serveur LibreTranslate (TRANSLATE_API_URL/KEY, voir .env.example).
+  • Dégradation gracieuse : si le service est indisponible, la page est
+    servie en français (jamais bloquée).
+
 RÉFÉRENCEMENT (SEO)
 ───────────────────
   Les articles disposent de vraies pages /article/<slug> rendues côté

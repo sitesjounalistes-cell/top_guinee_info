@@ -10,6 +10,8 @@ import { Link, navigate } from '@/lib/router'
 import type { ContactChannel, FlashInfo, SiteSettings, SocialLink } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { safeHttpUrl } from '@/lib/sanitize'
+import { useI18n, applyDocumentLang } from '@/lib/i18n'
+import { LangSwitcher } from './lang-switcher'
 import {
   FadeImage, FlashTicker, SocialIcon,
 } from '@/components/tg/shared'
@@ -40,15 +42,21 @@ export function FrontOffice({ route, settings, contacts, socials, flash, onOpenA
   flash: FlashInfo[]
   onOpenAdmin: () => void
 }) {
+  const { t, lang } = useI18n()
   const segments = route.segments
   const seg0 = segments[0] || ''
   const seg1 = segments[1] || ''
   const query = route.query
 
-  // Titre du document à la charte SEO
+  // Titre du document à la charte SEO + langue/direction du document
   useEffect(() => {
     document.title = settings.seoTitle || `${settings.siteName} — ${settings.slogan}`
   }, [settings.seoTitle, settings.siteName, settings.slogan])
+
+  // Langue & direction du document (arabe = RTL)
+  useEffect(() => {
+    applyDocumentLang(lang)
+  }, [lang])
 
   const activeRubrique = seg0 === 'rubrique' ? seg1 : ''
 
@@ -87,11 +95,11 @@ export function FrontOffice({ route, settings, contacts, socials, flash, onOpenA
       ? <TVView tvLabel={settings.tvLabel} tvYoutubeUrl={settings.tvYoutubeUrl} tvFacebookUrl={settings.tvFacebookUrl} />
       : <SectionUnavailable icon={<Tv size={22} aria-hidden />} label={settings.tvLabel || 'TV'} />
   } else if (seg0 === 'about') {
-    view = <StaticPageView pageKey="about" fallbackTitle="À propos de nous" />
+    view = <StaticPageView pageKey="about" fallbackTitle={t.about} />
   } else if (seg0 === 'contact') {
     view = <ContactView />
   } else if (seg0 === 'legal') {
-    view = <StaticPageView pageKey="legal" fallbackTitle="Mentions légales" />
+    view = <StaticPageView pageKey="legal" fallbackTitle={t.legal} />
   } else if (seg0 === 'privacy') {
     view = <StaticPageView pageKey="privacy" fallbackTitle="Politique de confidentialité" />
   } else {
@@ -154,6 +162,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
   fmOn: boolean
   tvOn: boolean
 }) {
+  const { t } = useI18n()
   const [term, setTerm] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -200,6 +209,9 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
                 <Phone size={12} aria-hidden /> {phone}
               </a>
             )}
+            <div className="border-l border-white/10 pl-3 ml-1">
+              <LangSwitcher />
+            </div>
             {socials.length > 0 && (
               <nav aria-label="Réseaux sociaux" className="flex items-center gap-0.5 border-l border-white/10 pl-4">
                 {socials.map((s) => (
@@ -219,8 +231,8 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
             )}
             <button
               onClick={onOpenAdmin}
-              aria-label="Espace administrateur"
-              title="Espace administrateur"
+              aria-label={t.adminArea}
+              title={t.adminArea}
               className="p-1.5 text-zinc-600 hover:text-tg-yellow transition-colors"
             >
               <Settings2 size={13} aria-hidden />
@@ -313,7 +325,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
                 type="search"
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
-                placeholder="Rechercher…"
+                placeholder={t.search}
                 aria-label="Rechercher sur le site"
                 className="w-52 h-10 rounded-sm bg-tg-gray border border-zinc-200 pl-9 pr-3 text-[13.5px] text-tg-navy placeholder:text-zinc-400 focus:outline-none focus:border-tg-navy focus:bg-white transition-colors"
               />
@@ -357,7 +369,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
       {/* ── Barre de navigation éditoriale (desktop, sticky) ───── */}
       <nav aria-label="Rubriques" className="hidden md:block sticky top-0 z-50 bg-tg-navy shadow-lg shadow-tg-navy/25">
         <div className="tg-container flex items-center">
-          <HeaderNavItem to="/" active={activeSeg0 === ''} label="Accueil" />
+          <HeaderNavItem to="/" active={activeSeg0 === ''} label={t.home} />
           {tops.map((r) => {
             const children = (r.children || []).filter((c) => c.isActive).sort((a, b) => a.order - b.order)
             const active = activeRubrique === r.slug || children.some((c) => c.slug === activeRubrique)
@@ -461,7 +473,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
                 type="search"
                 value={term}
                 onChange={(e) => setTerm(e.target.value)}
-                placeholder="Rechercher…"
+                placeholder={t.search}
                 aria-label="Rechercher sur le site"
                 className="w-full h-11 rounded-sm bg-white/[0.07] border border-white/15 pl-10 pr-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-tg-yellow/70"
               />
@@ -495,9 +507,9 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
           {/* Rubriques + sous-rubriques */}
           <nav aria-label="Rubriques" className="px-4 py-4 border-b border-white/10">
             <p className="tg-kicker text-white/40 mb-3 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rotate-45 bg-tg-yellow" aria-hidden /> Rubriques
+              <span className="w-1.5 h-1.5 rotate-45 bg-tg-yellow" aria-hidden /> {t.rubrics}
             </p>
-            <MobileNavLink to="/">Accueil</MobileNavLink>
+            <MobileNavLink to="/">{t.home}</MobileNavLink>
             {tops.map((r) => (
               <div key={r.id}>
                 <MobileNavLink to={`/rubrique/${r.slug}`}>
@@ -547,7 +559,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
               onClick={() => { setMobileOpen(false); onOpenAdmin() }}
               className="w-full h-11 rounded-sm border border-white/15 text-[13px] font-medium text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center gap-2 transition-colors"
             >
-              <Settings2 size={15} aria-hidden /> Espace administrateur
+              <Settings2 size={15} aria-hidden /> {t.adminArea}
             </button>
           </div>
         </SheetContent>
@@ -561,6 +573,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
 function SearchOverlay({ open, onClose, onSubmit }: {
   open: boolean; onClose: () => void; onSubmit: (q: string) => void
 }) {
+  const { t } = useI18n()
   const [term, setTerm] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -600,7 +613,7 @@ function SearchOverlay({ open, onClose, onSubmit }: {
       >
         <p className="tg-kicker text-tg-yellow flex items-center gap-3 mb-8">
           <span className="tg-flag-stripe" aria-hidden><i /></span>
-          Recherche
+          {t.search}
           <span className="tg-flag-stripe" aria-hidden><i /></span>
         </p>
         <div className="relative w-full">
@@ -610,7 +623,7 @@ function SearchOverlay({ open, onClose, onSubmit }: {
             type="search"
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Un sujet, un événement, une personnalité…"
+            placeholder={t.searchPlaceholder}
             aria-label="Votre recherche"
             className="w-full bg-transparent border-0 border-b-2 border-white/20 focus:border-tg-yellow text-white font-display font-semibold text-[22px] sm:text-[32px] py-4 sm:pl-12 placeholder:text-white/25 focus:outline-none transition-colors"
           />
@@ -684,6 +697,7 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
   fmOn: boolean
   tvOn: boolean
 }) {
+  const { t } = useI18n()
   const rubriques = useRubriques()
   const { data: home } = useAsyncData(getHomeCached, 'home')
   const tops = (rubriques || []).filter((r) => !r.parentId && r.isActive).sort((a, b) => a.order - b.order).slice(0, 8)
@@ -739,7 +753,7 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
 
         {/* Rubriques */}
         <nav aria-label="Rubriques du site" className="lg:col-span-2">
-          <FooterColumnTitle>Rubriques</FooterColumnTitle>
+          <FooterColumnTitle>{t.rubrics}</FooterColumnTitle>
           <ul className="space-y-0.5 text-[13.5px]">
             {tops.map((r) => (
               <li key={r.id}>
@@ -754,7 +768,7 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
 
         {/* Contact */}
         <div className="lg:col-span-3">
-          <FooterColumnTitle>Contact</FooterColumnTitle>
+          <FooterColumnTitle>{t.contact}</FooterColumnTitle>
           <ul className="space-y-3 text-[13.5px]">
             {activeContacts.map((c) => {
               const href = channelHref(c)
@@ -780,17 +794,17 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
 
         {/* Le média */}
         <div className="lg:col-span-3">
-          <FooterColumnTitle>Le média</FooterColumnTitle>
+          <FooterColumnTitle>{t.theMedia}</FooterColumnTitle>
           <ul className="space-y-0.5 text-[13.5px]">
-            <li><Link to="/about" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">À propos de nous</Link></li>
+            <li><Link to="/about" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.about}</Link></li>
             {fmOn && <li><Link to="/fm" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{settings.fmLabel || 'Top FM'} — Podcasts</Link></li>}
             {tvOn && <li><Link to="/tv" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{settings.tvLabel || 'TV'} — Direct & vidéos</Link></li>}
-            <li><Link to="/contact" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">Nous contacter</Link></li>
-            <li><Link to="/legal" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">Mentions légales</Link></li>
-            <li><Link to="/privacy" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">Confidentialité</Link></li>
+            <li><Link to="/contact" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.contactUs}</Link></li>
+            <li><Link to="/legal" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.legal}</Link></li>
+            <li><Link to="/privacy" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.privacy}</Link></li>
             <li>
               <button onClick={onOpenAdmin} className="py-1.5 text-zinc-600 hover:text-tg-yellow transition-colors inline-flex items-center gap-1.5">
-                <Settings2 size={12} aria-hidden /> Espace admin
+                <Settings2 size={12} aria-hidden /> {t.adminArea}
               </button>
             </li>
           </ul>
@@ -800,10 +814,10 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
       {/* Ligne finale */}
       <div className="border-t border-white/10">
         <div className="tg-container py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-[12px] text-zinc-600">
-          <p>© {new Date().getFullYear()} {settings.siteName} — Tous droits réservés</p>
+          <p>© {new Date().getFullYear()} {settings.siteName} — {t.rights}</p>
           <p className="flex items-center gap-2.5">
             <span className="tg-flag-stripe" aria-hidden><i /></span>
-            Fièrement conçu en Guinée
+            {t.proudly}
           </p>
         </div>
       </div>
@@ -814,6 +828,7 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
 // ─── Bouton retour en haut ───────────────────────────────────────────
 
 function ScrollTopButton() {
+  const { t } = useI18n()
   const [show, setShow] = useState(false)
   useEffect(() => {
     const onScroll = () => setShow(window.scrollY > 480)
@@ -838,6 +853,7 @@ function ScrollTopButton() {
 // ─── Vue maintenance (settings.maintenance === 'on') ─────────────────
 
 function MaintenanceView({ settings, contacts }: { settings: SiteSettings; contacts: ContactChannel[] }) {
+  const { t } = useI18n()
   const email = contacts.find((c) => c.type === 'email' && c.isActive)?.value || 'topguinee.info@gmail.com'
   useEffect(() => {
     document.title = `Maintenance — ${settings.siteName}`
@@ -866,7 +882,7 @@ function MaintenanceView({ settings, contacts }: { settings: SiteSettings; conta
         href={`mailto:${email}`}
         className="mt-9 inline-flex items-center gap-2 h-12 px-7 rounded-sm bg-tg-red hover:bg-tg-red-dark text-white text-sm font-semibold tracking-wide transition-colors min-h-[44px]"
       >
-        <Mail size={15} aria-hidden /> Nous contacter par e-mail
+        <Mail size={15} aria-hidden /> {t.contactUs}
       </a>
     </div>
   )

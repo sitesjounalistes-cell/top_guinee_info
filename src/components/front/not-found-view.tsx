@@ -3,14 +3,16 @@
 // raccourcis de lecture (rubriques populaires), bande tricolore de marque.
 
 import { Link } from '@/lib/router'
+import { useI18n } from '@/lib/i18n'
 import { RubriqueIcon, useRubriques } from './common'
 import { ArrowLeft, Search } from 'lucide-react'
 
 export function NotFoundView() {
+  const { t } = useI18n()
   const tops = useRubriques().filter((r) => !r.parentId && r.isActive).sort((a, b) => a.order - b.order).slice(0, 6)
 
   return (
-    <section className="tg-container py-10 md:py-16" aria-label="Page introuvable">
+    <section className="tg-container py-10 md:py-16" aria-label={t.notFoundTitle}>
       <div className="relative max-w-3xl mx-auto rounded-sm border border-zinc-200 bg-tg-paper tg-fade-up">
         <div className="px-6 py-12 md:py-16 text-center">
           {/* 404 géant en filigrane */}
@@ -25,7 +27,7 @@ export function NotFoundView() {
             Erreur de navigation
           </p>
           <h1 className="mt-4 font-display font-bold text-[26px] md:text-[32px] tracking-tight text-tg-navy">
-            Page introuvable
+            {t.notFoundTitle}
           </h1>
           <p className="mt-4 text-zinc-500 text-sm md:text-[15px] leading-relaxed max-w-md mx-auto">
             La page que vous cherchez a peut-être changé d&apos;adresse, ou n&apos;a jamais existé.
@@ -38,13 +40,13 @@ export function NotFoundView() {
               to="/"
               className="inline-flex items-center gap-2 min-h-[44px] px-6 rounded-sm bg-tg-navy hover:bg-tg-red text-white text-sm font-semibold tracking-wide transition-colors duration-300"
             >
-              <ArrowLeft size={15} aria-hidden /> Retour à l&apos;accueil
+              <ArrowLeft size={15} aria-hidden /> {t.backHome}
             </Link>
             <Link
               to="/recherche"
               className="inline-flex items-center gap-2 min-h-[44px] px-6 rounded-sm border border-tg-navy text-tg-navy hover:bg-tg-navy hover:text-white text-sm font-semibold tracking-wide transition-colors duration-300"
             >
-              <Search size={15} aria-hidden /> Rechercher
+              <Search size={15} aria-hidden /> {t.search}
             </Link>
           </div>
 

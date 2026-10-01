@@ -1,4 +1,5 @@
 // Client API typé Topguinee.info — toutes les communications front ↔ back
+import { currentLang } from '@/lib/i18n'
 import type {
   ArticleCardData, ArticleFull, Paginated, HomeData, FlashInfo, Emission, Episode,
   Rubrique, SiteSettings, ContactChannel, SocialLink, ContactMessage, AdSlot,
@@ -22,7 +23,15 @@ export class ApiError extends Error {
 export const UNAUTHORIZED_EVENT = 'tg:unauthorized'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  // i18n : les API publiques reçoivent la langue du visiteur — le serveur
+  // traduit les contenus éditoriaux (cache en base) ; l'interface, elle,
+  // est traduite côté client via les dictionnaires.
+  let target = url
+  if (url.startsWith('/api/public/') && !url.includes('lang=')) {
+    const lang = currentLang()
+    if (lang && lang !== 'fr') target += `${url.includes('?') ? '&' : '?'}lang=${lang}`
+  }
+  const res = await fetch(target, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
     cache: 'no-store',

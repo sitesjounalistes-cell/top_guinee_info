@@ -524,3 +524,50 @@ Tâche 11 (suite) — build Vercel VERT confirmé par les logs du client
 - src/middleware.ts → src/proxy.ts (convention Next 16, fin du warning
   « middleware file convention is deprecated ») ; comportement vérifié
   (Origin étrangère → 403, GET → 200)
+
+════════════════════════════════════════════════════════════════════
+ Tâche 12 — UX ÉDITORIALE : carrousel Une, éditeur enrichi, i18n
+════════════════════════════════════════════════════════════════════
+
+À la Une (§4.7 revisité) :
+- FeaturedCarousel (embla) : la principale + les secondaires défilent
+  en grandes cartes (auto 6 s, pause survol/focus, flèches, points,
+  a11y tablist) — remplace la composition statique
+
+Flash Info :
+- Vitesse adaptative à la longueur du contenu (20–75 s ; ~28 s / 100
+  car.), pause au survol conservée — vérifié en rendu réel
+
+Éditeur enrichi (§7.5) :
+- Nouveau sanitizeInline (liste blanche inline : strong/em/u/s/span,
+  classes de police uniquement) pour titre/sous-titre/description ;
+  sanitizeRichText étendu aux mêmes classes de police
+- RichInput (admin-shared) : titre, sous-titre et description deviennent
+  des champs enrichis (gras/italique/souligné + famille de police :
+  Sans/Éditorial/Serif/Mono) — barre au focus, coller en texte brut,
+  sanitisation au chargement/à la sortie, compteur en texte brut
+- Barre du corps : sélecteur de police (wrap de la sélection)
+- Rendu : RichInline appliqué à toutes les cartes (5 variantes), page
+  article SSR (h1, sous-titre), liste admin ; métadonnées <title>/OG/
+  JSON-LD en texte brut (stripHtml) ; serveur : sanitisation inline à
+  l'écriture ET à la lecture
+
+i18n public (6 langues : FR/EN/ES/IT/AR/ZH) :
+- Dictionnaires d'interface complets (src/lib/i18n/dicts.ts), provider
+  client (localStorage + cookie tg_lang), <html dir=rtl> pour l'arabe,
+  sélecteur dans la barre supérieure (toutes les pages rechargées dans
+  la langue choisie)
+- Traduction des CONTENUS côté serveur (src/lib/server/translate.ts) :
+  cache persistant TranslationCache (SHA-256, un segment = une
+  traduction), translateHtml préserve les balises, ?lang= sur toutes
+  les API publiques (home, articles, recherche, article complet, flash,
+  émissions, pages, settings) et page article SSR (cookie)
+- Résilience : budget 9 s par requête (jamais de page qui traîne),
+  disjoncteur 5 min si le provider limite, dégradation en français
+- Provider : MyMemory par défaut (sans clé) ; LibreTranslate/DeepEL
+  via TRANSLATE_API_URL/KEY (recommandé en production) ; quota
+  MyMemory augmenté via MYMEMORY_EMAIL
+- Perf base distante : /api/public/home restructuré en 2 vagues
+  parallèles (8 vagues séquencées auparavant) — 24 s → 14 s depuis une
+  connexion Guinée→Ohio ; < 1 s attendu sur Vercel (même région AWS
+  que Neon)

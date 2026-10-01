@@ -9,6 +9,27 @@ import sanitizeHtml from 'sanitize-html'
 
 // ─── Configuration éditoriale ─────────────────────────────────────
 
+// Familles de polices ouvertes aux rédacteurs (§ mise en forme riche) :
+// seules ces classes peuvent figurer dans un attribut class — tout autre
+// nom de classe est retiré par sanitize-html.
+export const FONT_CLASSES = ['font-display', 'font-serif', 'font-sans', 'font-mono'] as const
+export type FontClass = (typeof FONT_CLASSES)[number]
+
+const FONT_CLASS_SET: Record<string, string[]> = {
+  span: [...FONT_CLASSES],
+  strong: [...FONT_CLASSES],
+  em: [...FONT_CLASSES],
+  u: [...FONT_CLASSES],
+  s: [...FONT_CLASSES],
+  b: [...FONT_CLASSES],
+  i: [...FONT_CLASSES],
+  p: [...FONT_CLASSES],
+  h2: [...FONT_CLASSES],
+  h3: [...FONT_CLASSES],
+  h4: [...FONT_CLASSES],
+  blockquote: [...FONT_CLASSES],
+}
+
 const RICH_TEXT_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: [
     'p', 'br', 'hr', 'h2', 'h3', 'h4', 'strong', 'b', 'em', 'i', 'u', 's',
@@ -25,8 +46,11 @@ const RICH_TEXT_OPTIONS: sanitizeHtml.IOptions = {
     td: ['colspan', 'rowspan'],
     audio: ['controls', 'preload'],
     source: ['src', 'type'],
-    '*': [], // aucun attribut global (pas de style, pas de class, pas de handlers)
+    // class : filtrée par allowedClasses (polices uniquement)
+    ...Object.fromEntries(Object.keys(FONT_CLASS_SET).map(tag => [tag, ['class']])),
+    '*': [], // aucun attribut global (pas de style, pas de handlers)
   },
+  allowedClasses: FONT_CLASS_SET,
   // Schémas autorisés — javascript:, data:, vbscript:… sont rejetés par sanitize-html
   allowedSchemes: ['http', 'https', 'mailto'],
   allowedSchemesByTag: { img: ['http', 'https'], audio: ['http', 'https'], source: ['http', 'https'] },
@@ -50,6 +74,53 @@ const RICH_TEXT_OPTIONS: sanitizeHtml.IOptions = {
 export function sanitizeRichText(html: string): string {
   if (!html) return ''
   return sanitizeHtml(html, RICH_TEXT_OPTIONS)
+}
+
+// ─── Champs courts enrichis (titre, sous-titre, description) ──────
+
+const INLINE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: ['strong', 'b', 'em', 'i', 'u', 's', 'span', 'br', 'small'],
+  allowedAttributes: {
+    span: ['class'],
+    strong: ['class'],
+    em: ['class'],
+    u: ['class'],
+    s: ['class'],
+    b: ['class'],
+    i: ['class'],
+  },
+  allowedClasses: {
+    span: [...FONT_CLASSES],
+    strong: [...FONT_CLASSES],
+    em: [...FONT_CLASSES],
+    u: [...FONT_CLASSES],
+    s: [...FONT_CLASSES],
+    b: [...FONT_CLASSES],
+    i: [...FONT_CLASSES],
+  },
+  allowedSchemes: ['http', 'https', 'mailto'],
+  allowProtocolRelative: false,
+  allowVulnerableTags: false,
+  nestingLimit: 10,
+  transformTags: {
+    a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }),
+  },
+}
+
+/**
+ * Nettoie un champ court enrichi (titre / sous-titre / description) :
+ * balises inline uniquement — gras, italique, souligné, famille de police.
+ * Aucun bloc, aucune image, aucun lien (ce ne sont pas des titres).
+ */
+export function sanitizeInline(html: string): string {
+  if (!html) return ''
+  return sanitizeHtml(html, INLINE_OPTIONS)
+}
+
+/** Texte brut à partir d'un HTML enrichi (métadonnées, compteur, aria). */
+export function stripHtml(html: string): string {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 // ─── Validation d'URLs (champs administrables) ────────────────────

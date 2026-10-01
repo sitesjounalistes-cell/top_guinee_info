@@ -11,8 +11,10 @@ import type { Rubrique } from '@/lib/types'
 import { ArticleCard, Pagination } from '@/components/tg/shared'
 import { ErrorState, ListSkeleton, RubriqueIcon, useAsyncData, useRubriques } from './common'
 import { Search, SearchX } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 export function SearchView({ q, page }: { q: string; page: number }) {
+  const { t } = useI18n()
   const [term, setTerm] = useState(q)
   useEffect(() => { setTerm(q) }, [q])
   const tops = useRubriques().filter((r) => !r.parentId && r.isActive).sort((a, b) => a.order - b.order).slice(0, 8)
@@ -151,16 +153,17 @@ function RubriqueChip({ r }: { r: Rubrique }) {
 // ─── Aucun résultat : message + conseils + exploration ────────────────
 
 function NoResults({ q, tops }: { q: string; tops: Rubrique[] }) {
+  const { t } = useI18n()
   return (
     <div className="tg-fade-up text-center py-4 md:py-6">
       <span className="inline-flex w-14 h-14 rounded-full border border-tg-red/25 bg-tg-red/5 text-tg-red items-center justify-center">
         <SearchX size={22} aria-hidden />
       </span>
       <h2 className="mt-5 font-display font-bold text-xl md:text-2xl text-tg-navy tracking-tight">
-        Aucun article ne correspond à «&nbsp;{q}&nbsp;»
+        {t.noResults}
       </h2>
       <p className="mt-2.5 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-        Vérifiez l'orthographe du ou des mots-clés, essayez des termes plus généraux, ou parcourez nos rubriques ci-dessous.
+        {t.noResultsDesc}
       </p>
       <p className="mt-4 text-[12.5px] text-zinc-400 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
         <span>Moins de mots-clés</span>

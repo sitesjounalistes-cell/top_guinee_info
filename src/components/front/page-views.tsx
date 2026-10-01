@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useI18n } from '@/lib/i18n'
 import {
   Loader2, Mail, Phone, MessageCircle, MapPin, Info, Send,
 } from 'lucide-react'
@@ -46,13 +47,14 @@ function PageHero({ title, kicker }: { title: string; kicker: string }) {
 // ─── Page éditable générique (about / legal / privacy) ───────────────
 
 export function StaticPageView({ pageKey, fallbackTitle }: { pageKey: string; fallbackTitle: string }) {
+  const { t } = useI18n()
   const { data, loading, error, reload } = useAsyncData(() => publicApi.page(pageKey), pageKey)
   const title = data?.page?.title || fallbackTitle
 
   return (
     <div className="tg-container py-8 md:py-12">
       <div className="max-w-[760px] mx-auto">
-        <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: title }]} />
+        <Breadcrumb items={[{ label: t.home, to: '/' }, { label: title }]} />
         <div className="mt-8">
           {loading ? (
             <div className="space-y-5" aria-busy="true" aria-label="Chargement">
@@ -156,6 +158,7 @@ function Field({ label, htmlFor, required, error, children }: {
 const EMAIL_RE = /^\S+@\S+\.\S+$/
 
 export function ContactView() {
+  const { t } = useI18n()
   const { data, loading, error, reload } = useAsyncData(() => publicApi.settings(), 'settings-public')
   const contacts = (data?.contacts || []).filter((c) => c.isActive).sort((a, b) => a.order - b.order)
   const socials = (data?.socials || []).filter((s) => s.isActive).sort((a, b) => a.order - b.order)
@@ -290,7 +293,7 @@ export function ContactView() {
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="Votre nom" htmlFor="ct-name" required error={fieldErrors.name}>
+                <Field label={t.contactName} htmlFor="ct-name" required error={fieldErrors.name}>
                   <Input
                     id="ct-name"
                     value={form.name}
@@ -300,7 +303,7 @@ export function ContactView() {
                     className="h-11 rounded-sm border-zinc-300 focus-visible:border-tg-navy focus-visible:ring-0"
                   />
                 </Field>
-                <Field label="Votre e-mail" htmlFor="ct-email" required error={fieldErrors.email}>
+                <Field label={t.contactEmail} htmlFor="ct-email" required error={fieldErrors.email}>
                   <Input
                     id="ct-email"
                     type="email"
@@ -313,7 +316,7 @@ export function ContactView() {
                 </Field>
               </div>
 
-              <Field label="Sujet" htmlFor="ct-subject" required error={fieldErrors.subject}>
+              <Field label={t.contactSubject} htmlFor="ct-subject" required error={fieldErrors.subject}>
                 <Input
                   id="ct-subject"
                   value={form.subject}
@@ -324,7 +327,7 @@ export function ContactView() {
                 />
               </Field>
 
-              <Field label="Votre message" htmlFor="ct-message" required error={fieldErrors.message}>
+              <Field label={t.contactMessage} htmlFor="ct-message" required error={fieldErrors.message}>
                 <Textarea
                   id="ct-message"
                   value={form.message}
@@ -342,7 +345,7 @@ export function ContactView() {
                 className="w-full h-12 rounded-sm bg-tg-navy hover:bg-tg-red text-white font-semibold tracking-wide min-h-[44px] transition-colors duration-300"
               >
                 {sending ? <Loader2 size={18} className="animate-spin mr-2" aria-hidden /> : <Send size={16} className="mr-2" aria-hidden />}
-                {sending ? 'Envoi en cours…' : 'Envoyer le message'}
+                {sending ? '…' : t.contactSend}
               </Button>
               <p className="text-[11px] text-zinc-400 text-center pt-1">
                 Vos données ne sont utilisées que pour vous répondre — jamais partagées.

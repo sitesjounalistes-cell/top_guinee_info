@@ -5,9 +5,10 @@
 import { Link } from '@/lib/router'
 import type { AdBannerData, Episode } from '@/lib/types'
 import { fmt } from '@/lib/api'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
-  ArticleCard, AudioPlayer, SectionHeader, YouTubeEmbed,
+  ArticleCard, AudioPlayer, FeaturedCarousel, RichInline, SectionHeader, YouTubeEmbed,
 } from '@/components/tg/shared'
 import {
   CardsSkeleton, EmptyState, ErrorState, ImpressionBanner, getHomeCached, useAsyncData,
@@ -17,6 +18,7 @@ import { ArrowRight, Headphones, ListVideo, Play, TrendingUp } from 'lucide-reac
 const RANK_COLORS = ['#D21034', '#c99700', '#00734B', '#14213D', '#a80c28']
 
 export function HomeView() {
+  const { t } = useI18n()
   const { data, loading, error, reload } = useAsyncData(getHomeCached, 'home')
 
   if (loading) return <HomeSkeleton />
@@ -37,47 +39,26 @@ export function HomeView() {
       {/* ── 1. À la Une — composition magazine ──────────────────── */}
       <section aria-label="À la une" className="tg-fade-up">
         <SectionHeader
-          title="À la une"
+          title={t.featured}
           rubrique={null}
           action={
             <span className="hidden sm:inline-flex items-center gap-1.5 tg-kicker text-zinc-400">
-              <TrendingUp size={12} aria-hidden /> L'essentiel du jour
+              <TrendingUp size={12} aria-hidden /> {t.todaysEssential}
             </span>
           }
         />
-        {featured.main ? (
-          <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
-            {/* Article principal */}
-            <div className="lg:col-span-8">
-              <ArticleCard article={featured.main} variant="hero" />
-            </div>
-            {/* Rail latéral */}
-            <div className="lg:col-span-4 flex flex-col min-w-0">
-              {secondary.slice(0, 1).map((a) => (
-                <ArticleCard key={a.id} article={a} variant="medium" />
-              ))}
-              {secondary.slice(1, 4).length > 0 && (
-                <div className="divide-y divide-zinc-200 mt-2 lg:mt-4">
-                  {secondary.slice(1, 4).map((a) => (
-                    <div key={a.id} className="py-4 first:pt-4 last:pb-0">
-                      <ArticleCard article={a} variant="horizontal" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : secondary.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-            {secondary.slice(0, 6).map((a) => (
-              <ArticleCard key={a.id} article={a} variant="medium" />
-            ))}
-          </div>
+        {/* Défilement des articles à la Une : la principale puis les
+            secondaires, en grandes cartes qui se succèdent automatiquement
+            (pause au survol, flèches et points de navigation). */}
+        {featured.main || secondary.length > 0 ? (
+          <FeaturedCarousel
+            articles={[featured.main, ...secondary].filter(Boolean) as NonNullable<typeof featured.main>[]}
+          />
         ) : (
           <EmptyState
             icon={<ListVideo size={20} aria-hidden />}
-            title="La Une se prépare"
-            description="Nos journalistes sélectionnent les informations du moment. Revenez dans quelques instants !"
+            title={t.preparing}
+            description={t.preparingDesc}
           />
         )}
       </section>
@@ -97,7 +78,7 @@ export function HomeView() {
                   to={`/rubrique/${block.rubrique.slug}`}
                   className="group/link inline-flex items-center gap-1.5 tg-kicker text-tg-red hover:text-tg-red-dark transition-colors py-1"
                 >
-                  Tout voir
+                  {t.seeAll}
                   <ArrowRight size={13} aria-hidden className="transition-transform duration-300 group-hover/link:translate-x-1" />
                 </Link>
               }
@@ -130,9 +111,9 @@ export function HomeView() {
         <section className="tg-fade-up grid lg:grid-cols-3 gap-8 lg:gap-10" aria-label="Les articles les plus lus">
           <div className="lg:col-span-2 min-w-0">
             <SectionHeader
-              title="Les plus lus"
+              title={t.mostRead}
               rubrique={null}
-              action={<span className="tg-kicker text-tg-red">Top 5</span>}
+              action={<span className="tg-kicker text-tg-red">{t.top5}</span>}
             />
             <ol>
               {mostRead.slice(0, 5).map((a, i) => (
@@ -159,10 +140,10 @@ export function HomeView() {
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-200">
                   <h3 className="font-display font-bold text-[17px] text-tg-navy flex items-center gap-2.5">
                     <span className="w-2 h-2 rotate-45 bg-tg-green shrink-0" aria-hidden />
-                    Derniers épisodes
+                    {t.latestEpisodes}
                   </h3>
                   <Link to="/fm" className="text-[11px] font-semibold uppercase tracking-wider text-tg-red hover:text-tg-red-dark transition-colors">
-                    Tout écouter
+                    {t.listenAll}
                   </Link>
                 </div>
                 <div className="space-y-3.5">
@@ -180,17 +161,17 @@ export function HomeView() {
       {(showVideos || showEpisodes) && (
         <section
           className={cn('tg-fade-up gap-8 lg:gap-10', showVideos && showEpisodes ? 'grid lg:grid-cols-2' : 'block')}
-          aria-label="Médias — vidéos et podcasts"
+          aria-label={t.mediaHub}
         >
           {/* Vidéos */}
           {showVideos && (
           <div className={cn('min-w-0', !showEpisodes && 'max-w-3xl')}>
             <SectionHeader
-              title="Vidéos"
+              title={t.videos}
               rubrique={null}
               action={tvOn ? (
                 <Link to="/tv" className="group/link inline-flex items-center gap-1.5 tg-kicker text-tg-red hover:text-tg-red-dark transition-colors py-1">
-                  Voir le direct
+                  {t.watchLive}
                   <ArrowRight size={13} aria-hidden className="transition-transform duration-300 group-hover/link:translate-x-1" />
                 </Link>
               ) : undefined}
@@ -203,7 +184,7 @@ export function HomeView() {
                     to={`/article/${latestVideos[0].slug}`}
                     className="block px-4 py-3.5 font-display font-semibold text-[15.5px] text-tg-navy hover:text-tg-red transition-colors leading-snug"
                   >
-                    {latestVideos[0].title}
+                    <RichInline html={latestVideos[0].title} />
                   </Link>
                 </div>
                 {latestVideos.length > 1 && (
@@ -222,15 +203,15 @@ export function HomeView() {
             </div>
           )}
 
-          {/* Podcasts / FM — masqué si la rubrique FM est désactivée */}
+          {/* {t.podcasts} — masqué si la rubrique FM est désactivée */}
           {showEpisodes && (
           <div className="min-w-0">
             <SectionHeader
-              title="Podcasts / FM"
+              title="{t.podcasts}"
               rubrique={null}
               action={
                 <Link to="/fm" className="group/link inline-flex items-center gap-1.5 tg-kicker text-tg-red hover:text-tg-red-dark transition-colors py-1">
-                  Voir les émissions
+                  {t.seeAll}
                   <ArrowRight size={13} aria-hidden className="transition-transform duration-300 group-hover/link:translate-x-1" />
                 </Link>
               }

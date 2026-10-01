@@ -13,6 +13,7 @@ import { EmptyState, ErrorState, useAsyncData } from './common'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Facebook, PlayCircle, Tv, Youtube } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 interface TVViewProps {
   tvLabel?: string
@@ -21,6 +22,7 @@ interface TVViewProps {
 }
 
 export function TVView({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
+  const { t } = useI18n()
   const label = tvLabel || 'TV'
   const videos = useAsyncData(
     () => publicApi.articles({ hasVideo: '1', limit: 8, sort: 'recent' }),
@@ -38,7 +40,7 @@ export function TVView({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
             <div className="min-w-0">
               <p className="tg-kicker text-tg-yellow flex items-center gap-3">
                 <span className="tg-flag-stripe" aria-hidden><i /></span>
-                Direct & vidéos
+                {t.liveAndVideos}
               </p>
               <h1 className="mt-4 font-display font-black text-[30px] md:text-[42px] leading-[1.05] tracking-tight">
                 {label}
@@ -70,7 +72,7 @@ export function TVView({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
       {/* ── Vidéos de la rédaction ───────────────────────────────── */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
         <SectionHeader
-          title="Vidéos de la rédaction"
+          title={t.videos}
           rubrique={null}
           action={<span className="hidden sm:inline-flex items-center gap-1.5 tg-kicker text-zinc-400">Reportages & plateaux</span>}
         />
@@ -84,7 +86,7 @@ export function TVView({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
         ) : items.length === 0 ? (
           <EmptyState
             icon={<PlayCircle size={22} aria-hidden />}
-            title="Aucune vidéo pour le moment"
+            title={t.emptySection}
             description="Nos caméras préparent les prochains sujets. Les reportages de la rédaction arrivent bientôt !"
           />
         ) : (
@@ -102,6 +104,7 @@ export function TVView({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
 // ─── Lecteur principal : bascule YouTube / Facebook ──────────────────
 
 function TVPlayer({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
+  const { t } = useI18n()
   const yt = tvYoutubeUrl?.trim() || ''
   const fb = tvFacebookUrl?.trim() || ''
   const embedSrc = yt ? youtubeEmbedSrc(yt) : ''
@@ -114,7 +117,7 @@ function TVPlayer({ tvLabel, tvYoutubeUrl, tvFacebookUrl }: TVViewProps) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 md:py-14">
         <EmptyState
           icon={<Tv size={22} aria-hidden />}
-          title="Aucun direct configuré pour le moment"
+          title={t.emptySection}
           description={`L'équipe de ${tvLabel} prépare sa prochaine retransmission. Revenez très vite !`}
         />
       </div>

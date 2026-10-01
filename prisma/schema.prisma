@@ -270,11 +270,26 @@ model ActivityLog {
   id        String   @id @default(cuid())
   userId    String?
   userLabel String   @default("système")
-  action    String   // CREATE | UPDATE | DELETE | PUBLISH | LOGIN | ... 
+  action    String   // CREATE | UPDATE | DELETE | PUBLISH | LOGIN | ...
   entity    String   // Article | Rubrique | FlashInfo | ...
   entityId  String?
   detail    String   @default("")
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ─── Traductions automatiques (i18n public) ─────────────────────────
+// Cache persistant : chaque segment traduit n'est traduit qu'une fois
+// (clé = hachage SHA-256 de la langue + du texte source).
+
+model TranslationCache {
+  key       String   @id
+  lang      String
+  source    String
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lang])
 }

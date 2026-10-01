@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { requireUser, hasMinRole } from '@/lib/auth'
-import { sanitizeRichText, safeMediaUrl, safeHttpUrl } from '@/lib/sanitize'
+import { sanitizeRichText, sanitizeInline, safeMediaUrl, safeHttpUrl } from '@/lib/sanitize'
 import {
   unauth, bad, serverError, logAction, parseDate, computeReadTime,
   uniqueSlugIn, articleCardInclude, articleFullInclude, toCard, toFull,
@@ -110,9 +110,9 @@ export async function POST(req: Request) {
 
     const article = await db.article.create({
       data: {
-        title,
-        subtitle: String(body?.subtitle ?? ''),
-        description: String(body?.description ?? ''),
+        title: sanitizeInline(title),
+        subtitle: sanitizeInline(String(body?.subtitle ?? '')),
+        description: sanitizeInline(String(body?.description ?? '')),
         body: bodyHtml,
         slug,
         coverImage,

@@ -283,6 +283,8 @@ a:hover .tg-title-link,
 
 /* Éditeur WYSIWYG (§7.5) */
 .tg-editor:empty::before { content: attr(data-placeholder); color: #a1a1aa; }
+.rich-input:empty::before { content: attr(data-placeholder); color: #d4d4d8; pointer-events: none; }
+.rich-input:focus { outline: none; }
 .tg-editor:focus { outline: 2px solid #00946033; outline-offset: 2px; border-radius: 4px; }
 .tg-editor img { @apply max-w-full rounded-md my-2; }
 .tg-editor blockquote { @apply border-l-4 border-tg-yellow bg-tg-yellow/10 pl-3 py-1 italic my-2; }

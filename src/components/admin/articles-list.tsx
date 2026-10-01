@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import { adminApi, fmt, STATUS_LABELS } from '@/lib/api'
 import { navigate } from '@/lib/router'
 import type { ArticleCardData, ArticleStatus, Rubrique } from '@/lib/types'
-import { FadeImage, StatusBadge } from '@/components/tg/shared'
+import { FadeImage, StatusBadge, RichInline } from '@/components/tg/shared'
+import { stripHtml } from '@/lib/sanitize'
 import { useDebounced } from './admin-shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -94,7 +95,7 @@ export function ArticlesList({ initialQ }: { initialQ?: string }) {
     setBusyId(a.id)
     try {
       await adminApi.updateArticle(a.id, { status: next })
-      toast.success(next === 'PUBLISHED' ? 'Article publié' : 'Article dépublié', { description: a.title })
+      toast.success(next === 'PUBLISHED' ? 'Article publié' : 'Article dépublié', { description: stripHtml(a.title) })
       load(page)
     } catch (e) {
       toast.error('Action impossible', { description: e instanceof Error ? e.message : undefined })
@@ -221,7 +222,7 @@ export function ArticlesList({ initialQ }: { initialQ?: string }) {
                           <FadeImage src={a.coverImage} alt={a.coverAlt || a.title} fill sizes="60px" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-tg-navy group-hover:text-tg-red transition-colors line-clamp-1">{a.title}</p>
+                          <p className="text-sm font-medium text-tg-navy group-hover:text-tg-red transition-colors line-clamp-1"><RichInline html={a.title} /></p>
                           <p className="text-[11px] text-muted-foreground line-clamp-1">{a.subtitle || a.description || '—'}</p>
                         </div>
                       </button>

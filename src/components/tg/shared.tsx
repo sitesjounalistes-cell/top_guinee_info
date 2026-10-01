@@ -4,9 +4,11 @@
 // interactions mesurées (zoom lent, soulignement animé).
 import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import useEmblaCarousel from 'embla-carousel-react'
 import { fmt, STATUS_LABELS, STATUS_COLORS } from '@/lib/api'
+import { useI18n } from '@/lib/i18n'
 import { Link } from '@/lib/router'
-import { sanitizeRichText, safeHttpUrl } from '@/lib/sanitize'
+import { sanitizeRichText, safeHttpUrl, sanitizeInline, stripHtml } from '@/lib/sanitize'
 import type { ArticleCardData, AdBannerData, Rubrique } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import {
@@ -79,7 +81,111 @@ function MetaLine({ article, light, full }: { article: ArticleCardData; light?: 
   )
 }
 
+
+// ─── Champ court enrichi (titre / sous-titre / description) ───────
+
+/** Rend un texte pouvant contenir gras/italique/police (liste blanche). */
+export function RichInline({ html, className }: { html?: string | null; className?: string }) {
+  const clean = sanitizeInline(html || '')
+  if (!clean) return null
+  return <span className={className} dangerouslySetInnerHTML={{ __html: clean }} />
+}
+
 // ─── Cartes d'article (§10.3 — variantes éditoriales) ─────────────
+
+// ─── Carrousel À la Une (§4.7 — défilement des articles de Une) ───
+
+/** Défilement automatique gauche → droite des articles à la Une. */
+export function FeaturedCarousel({ articles, intervalMs = 6000 }: {
+  articles: ArticleCardData[]
+  intervalMs?: number
+}) {
+  const { t } = useI18n()
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, duration: 28 })
+  const [selected, setSelected] = useState(0)
+  const [paused, setPaused] = useState(false)
+
+  // Synchronise l'indicateur actif avec le slide visible
+  useEffect(() => {
+    if (!emblaApi) return
+    const onSelect = () => setSelected(emblaApi.selectedScrollSnap())
+    emblaApi.on('select', onSelect)
+    onSelect()
+    return () => { emblaApi.off('select', onSelect) }
+  }, [emblaApi])
+
+  // Défilement automatique — en pause au survol/focus et s'il n'y a qu'un slide
+  useEffect(() => {
+    if (!emblaApi || paused || articles.length < 2) return
+    const t = setInterval(() => emblaApi.scrollNext(), intervalMs)
+    return () => clearInterval(t)
+  }, [emblaApi, paused, articles.length, intervalMs])
+
+  if (!articles.length) return null
+
+  return (
+    <div
+      className="relative group/car"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      role="region"
+      aria-roledescription="carrousel"
+      aria-label={t.carouselLabel}
+    >
+      <div ref={emblaRef} className="overflow-hidden rounded-sm">
+        <div className="flex">
+          {articles.map((a) => (
+            <div key={a.id} className="min-w-0 flex-[0_0_100%]" role="group" aria-roledescription="slide" aria-label={stripHtml(a.title) || 'Article à la une'}>
+              <ArticleCard article={a} variant="hero" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Flèches — visibles au survol, toujours sur mobile */}
+      {articles.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => emblaApi?.scrollPrev()}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-tg-navy shadow-lg flex items-center justify-center transition-all opacity-80 md:opacity-0 md:group-hover/car:opacity-100 focus-visible:opacity-100"
+            aria-label={t.carouselPrev}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={() => emblaApi?.scrollNext()}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-tg-navy shadow-lg flex items-center justify-center transition-all opacity-80 md:opacity-0 md:group-hover/car:opacity-100 focus-visible:opacity-100"
+            aria-label={t.carouselNext}
+          >
+            <ChevronRight size={20} />
+          </button>
+
+          {/* Points de navigation */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5" role="tablist" aria-label="Choisir un article à la une">
+            {articles.map((a, i) => (
+              <button
+                key={a.id}
+                type="button"
+                role="tab"
+                aria-selected={selected === i}
+                aria-label={stripHtml(a.title) || `Article ${i + 1}`}
+                onClick={() => emblaApi?.scrollTo(i)}
+                className={cn(
+                  'h-1.5 rounded-full transition-all',
+                  selected === i ? 'w-7 bg-tg-yellow' : 'w-3 bg-white/60 hover:bg-white',
+                )}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export function ArticleCard({ article, variant = 'medium' }: { article: ArticleCardData; variant?: 'hero' | 'large' | 'medium' | 'small' | 'horizontal' }) {
   const rubColor = article.rubrique?.color || '#D21034'
@@ -102,10 +208,10 @@ export function ArticleCard({ article, variant = 'medium' }: { article: ArticleC
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 space-y-3.5">
           <h2 className="font-display font-bold text-white text-[24px] md:text-[34px] lg:text-[40px] leading-[1.1] tracking-tight drop-shadow-sm">
-            <span className="tg-title-link">{article.title}</span>
+            <span className="tg-title-link"><RichInline html={article.title} /></span>
           </h2>
           <p className="text-zinc-200/95 text-sm md:text-[15px] leading-relaxed line-clamp-2 max-w-2xl font-medium">
-            {article.subtitle || article.description}
+            <RichInline html={article.subtitle || article.description} />
           </p>
           <MetaLine article={article} light full />
         </div>
@@ -122,7 +228,7 @@ export function ArticleCard({ article, variant = 'medium' }: { article: ArticleC
         <div className="min-w-0 flex-1 space-y-1.5 pt-0.5">
           <RubriqueKicker article={article} />
           <h3 className="font-display font-semibold text-[15px] md:text-[17px] leading-snug text-tg-navy">
-            <span className="tg-title-link">{article.title}</span>
+            <span className="tg-title-link"><RichInline html={article.title} /></span>
           </h3>
           <MetaLine article={article} />
         </div>
@@ -137,7 +243,7 @@ export function ArticleCard({ article, variant = 'medium' }: { article: ArticleC
           <FadeImage src={article.coverImage} alt={article.coverAlt || article.title} fill sizes="70px" className="tg-zoom" />
         </div>
         <h3 className="font-medium text-[13.5px] leading-snug text-tg-navy group-hover:text-tg-red transition-colors line-clamp-3">
-          {article.title}
+          <RichInline html={article.title} />
         </h3>
       </Link>
     )
@@ -166,10 +272,10 @@ export function ArticleCard({ article, variant = 'medium' }: { article: ArticleC
           isLarge ? 'text-xl md:text-[22px]' : 'text-[17px]',
           'leading-snug line-clamp-2',
         )}>
-          <span className="tg-title-link">{article.title}</span>
+          <span className="tg-title-link"><RichInline html={article.title} /></span>
         </h3>
         <p className={cn('text-zinc-500 leading-relaxed line-clamp-2', isLarge ? 'text-[14px]' : 'text-[13px]')}>
-          {article.description}
+          <RichInline html={article.description} />
         </p>
         <div className="mt-auto pt-2">
           <span className="text-[11px] font-medium tracking-wide text-zinc-400">{fmt.date(article.publishedAt)}</span>
@@ -198,6 +304,11 @@ export function SectionHeader({ title, rubrique, action }: { title: string; rubr
 export function FlashTicker({ items }: { items: { id: string; text: string; articleId?: string | null; priority: number; article?: { slug: string; title: string } | null }[] }) {
   if (!items.length) return null
   const doubled = [...items, ...items]
+  // Vitesse adaptative : le contenu défile en ~28 s par tranche de 100
+  // caractères (borné 20–75 s) — un texte court reste lisible, un texte
+  // long garde le temps d'être lu. Pause au survol gérée en CSS.
+  const chars = items.reduce((n, f) => n + (f.text?.length || 0), 0)
+  const duration = Math.min(75, Math.max(20, Math.round((chars / 100) * 28)))
   return (
     <div className="bg-tg-red text-white overflow-hidden relative z-40" role="region" aria-label="Flash info">
       <div className="flex items-stretch">
@@ -209,7 +320,7 @@ export function FlashTicker({ items }: { items: { id: string; text: string; arti
           <span className="font-bold text-[11px] md:text-[12px] tracking-[0.18em] uppercase whitespace-nowrap">Flash Info</span>
         </div>
         <div className="overflow-hidden flex-1 py-2.5">
-          <div className="tg-marquee-track">
+          <div className="tg-marquee-track" style={{ animationDuration: `${duration}s` }}>
             {doubled.map((f, i) => (
               <span key={`${f.id}-${i}`} className="inline-flex items-center gap-2.5 text-[13px] font-medium">
                 {f.priority >= 3 && <span className="bg-tg-yellow text-tg-navy font-bold px-1.5 py-0.5 rounded-sm text-[9.5px] uppercase tracking-wider">Urgent</span>}

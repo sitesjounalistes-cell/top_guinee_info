@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { sanitizeRichText } from '@/lib/sanitize'
+import { sanitizeRichText, sanitizeInline } from '@/lib/sanitize'
 import type { SiteSettings, AdBannerData, ArticleCardData, ArticleFull } from '@/lib/types'
 
 // ─── Réponses standardisées ───────────────────────────────────────
@@ -103,9 +103,11 @@ export type ArticleFullPayload = Prisma.ArticleGetPayload<{ include: typeof arti
 export function toCard(a: ArticleCardPayload): ArticleCardData {
   return {
     id: a.id,
-    title: a.title,
-    subtitle: a.subtitle,
-    description: a.description,
+    // Champs courts enrichis (gras/italique/police) : nettoyés par liste
+    // blanche inline à la lecture comme à l'écriture
+    title: sanitizeInline(a.title),
+    subtitle: sanitizeInline(a.subtitle),
+    description: sanitizeInline(a.description),
     slug: a.slug,
     coverImage: a.coverImage,
     coverAlt: a.coverAlt,
