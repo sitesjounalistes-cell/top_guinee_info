@@ -183,6 +183,15 @@ export function FMManager() {
     setEpForm((f) => ({ ...f, audioUrl: url || '' }))
   }
 
+  // Durée auto-remplie dès que la prévisualisation lit les métadonnées
+  // (fonctionne aussi bien pour le proxy Drive que pour le CDN Cloudinary)
+  const onPreviewMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
+    const d = e.currentTarget.duration
+    if (isFinite(d) && d > 0) {
+      setEpForm((f) => (Number(f.duration) > 0 ? f : { ...f, duration: String(Math.round(d)) }))
+    }
+  }
+
   // ── Import Drive ─────────────────────────────────────────────────
   const openDriveImport = (emissionId: string) => {
     setDiEmissionId(emissionId)
@@ -259,21 +268,6 @@ export function FMManager() {
 
   const episodesOf = (emissionId: string) =>
     episodes.filter((e) => e.emissionId === emissionId).sort((a, b) => new Date(b.publishAt || b.createdAt).getTime() - new Date(a.publishAt || a.createdAt).getTime())
-
-  const estimateDuration = (file: File) => {
-    try {
-      const audio = new Audio()
-      audio.preload = 'metadata'
-      audio.src = URL.createObjectURL(file)
-      audio.addEventListener('loadedmetadata', () => {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          setEpForm((f) => ({ ...f, duration: String(Math.round(audio.duration)) }))
-          toast.info(`Durée détectée : ${fmt.duration(audio.duration)}`)
-        }
-        URL.revokeObjectURL(audio.src)
-      }, { once: true })
-    } catch { /* métadonnées illisibles — champ manuel */ }
-  }
 
   return (
     <div className="space-y-4">
@@ -496,20 +490,31 @@ export function FMManager() {
               <Textarea id="ep-desc" rows={2} value={epForm.description} onChange={(e) => setEpForm({ ...epForm, description: e.target.value })} placeholder="Résumé de l'épisode…" />
             </div>
             <div className="space-y-2">
-              <Label>Fichier audio <span className="text-tg-red">*</span></Label>
-              <AudioDropzone
-                value={epForm.audioUrl || null}
-                onChange={onEpisodeAudioUploaded}
-              />
-              <div className="space-y-1">
-                <Label htmlFor="ep-audio-url" className="text-[11px] text-muted-foreground">
-                  …ou coller une URL (lien Google Drive d'un fichier audio accepté — converti automatiquement)
-                </Label>
-                <Input id="ep-audio-url" value={epForm.audioUrl} onChange={(e) => setEpForm({ ...epForm, audioUrl: e.target.value })} placeholder="https://drive.google.com/file/d/…  ou  https://…/episode.mp3" className="h-8 text-xs font-mono" />
-                <p className="text-[10.5px] text-muted-foreground">
-                  Drive : partagez le fichier en « Tout le monde avec le lien ». Un dossier entier ? Utilisez « Importer un dossier Drive ».
-                </p>
-              </div>
+              <Label htmlFor="ep-audio-url">Lien Google Drive de l'audio <span className="text-tg-red">*</span></Label>
+              <Input id="ep-audio-url" value={epForm.audioUrl} onChange={(e) => setEpForm({ ...epForm, audioUrl: e.target.value })} placeholder="https://drive.google.com/file/d/…" className="font-mono text-xs" />
+              <p className="text-[10.5px] text-muted-foreground leading-relaxed">
+                Dans Drive : partagez le fichier en « <strong>Tout le monde avec le lien</strong> ». L'audio est lu en streaming <strong>directement depuis Drive</strong> — il n'est copié ni sur le site ni sur Cloudinary. Un dossier entier ? Utilisez « Importer un dossier Drive ».
+              </p>
+
+              {epForm.audioUrl.trim() ? (
+                <div className="rounded-xl border border-tg-green/40 bg-tg-green/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-tg-green flex items-center gap-1.5"><Headphones size={13} /> Vérifiez la lecture avant de publier</p>
+                    <button type="button" onClick={() => setEpForm((f) => ({ ...f, audioUrl: '' }))} className="text-[11px] text-tg-red hover:underline">Changer de source</button>
+                  </div>
+                  {/* Prévisualisation : la durée est remplie automatiquement dès lecture des métadonnées */}
+                  <audio controls src={epForm.audioUrl} preload="metadata" className="w-full" onLoadedMetadata={onPreviewMetadata} />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 pt-1" aria-hidden>
+                    <span className="flex-1 border-t border-zinc-200" />
+                    <span className="text-[10.5px] text-muted-foreground">ou charger un fichier (stocké sur Cloudinary)</span>
+                    <span className="flex-1 border-t border-zinc-200" />
+                  </div>
+                  <AudioDropzone value={null} onChange={onEpisodeAudioUploaded} />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

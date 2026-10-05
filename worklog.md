@@ -711,3 +711,34 @@ l'audio joue sur le site, SANS clé ni compte de service Google.
 - Limites documentées : fichiers/dossiers doivent être « Tout le monde
   avec le lien » ; endpoints publics Google non contractuels (échec
   propre le cas échéant).
+
+════════════════════════════════════════════════════════════════════
+ Tâche 18 — PRINCIPE DE STOCKAGE : DRIVE POUR L'AUDIO, CLOUDINARY
+ POUR L'IMAGE, YOUTUBE POUR LA VIDÉO
+════════════════════════════════════════════════════════════════════
+
+Architecture validée de bout en bout (conforme au besoin exprimé) :
+- AUDIO FM : le journaliste colle le lien Drive du fichier partagé
+  (« Tout le monde avec le lien ») dans le cockpit → converti en URL
+  du proxy interne → lecture STREAMING DIRECTE depuis Drive.
+  L'audio n'est jamais copié sur Vercel ni transféré vers Cloudinary
+  (le proxy relaie le flux en mémoire, zéro écriture disque).
+- IMAGE de couverture : import direct dans le cockpit → stockée sur
+  Cloudinary (CDN) — inchangé.
+- TV : lien YouTube → lecture iframe directe chez YouTube, la vidéo
+  n'est téléchargée nulle part — inchangé.
+
+Peaufinages cockpit (dialog épisode) :
+- Le lien Google Drive devient l'entrée PRINCIPALE (champ dédié en
+  tête, procédure de partage rappelée, mention explicite « streaming
+  direct depuis Drive, rien n'est copié »)
+- Prévisualisation audio intégrée : le journaliste VÉRIFIE la lecture
+  avant de publier ; la durée de l'épisode se remplit automatiquement
+  dès la lecture des métadonnées (fonctionne pour Drive ET Cloudinary)
+- Le chargement d'un fichier depuis l'ordinateur passe en option
+  secondaire, annoté « stocké sur Cloudinary »
+- estimateDuration (code mort) supprimé — remplacé par la détection
+  via la prévisualisation
+
+Note d'exploitation : disque C: saturé (100 %) — build passé après
+purge de .next et des temporaires ; à surveiller côté machine locale.
