@@ -1,8 +1,12 @@
 // Stockage externe Topguinee.info (§6 — externalisation des médias)
 // ─────────────────────────────────────────────────────────────────────
-// • Images  → Cloudinary (CDN, WebP/multi-tailles côté Cloudinary)
-// • Audios  → Google Drive (dossier dédié, servi ensuite via proxy /api/public/media/audio/[fileId])
-// • Repli   → disque local public/uploads si un service n'est pas configuré
+// • Images ET audios → Cloudinary (CDN) — configuration unique
+//   (cloud name + clé API + secret) : les audios sont servis directement
+//   par le CDN Cloudinary (resource_type « video », qui couvre l'audio).
+// • Repli historique : Google Drive pour l'audio (streaming via proxy
+//   /api/public/media/audio/[fileId]) — utilisé uniquement si Cloudinary
+//   n'est pas configuré mais que Drive l'est.
+// • Repli final → disque local public/uploads.
 // Module SERVEUR uniquement — les clés ne quittent jamais le backend.
 import crypto from 'crypto'
 import { promises as fs } from 'fs'
@@ -73,6 +77,41 @@ export async function uploadImageToCloudinary(
     method: 'POST',
     body: fd,
     signal: AbortSignal.timeout(60_000),
+  })
+  const json = await res.json().catch(() => ({} as Record<string, unknown>))
+  if (!res.ok || !json.secure_url) {
+    const msg = (json as { error?: { message?: string } }).error?.message || `Cloudinary a répondu ${res.status}`
+    throw new Error(msg)
+  }
+  return { url: String(json.secure_url), publicId: String(json.public_id || '') }
+}
+
+/**
+ * Envoie un fichier AUDIO vers Cloudinary (resource_type « video », qui
+ * couvre les médias audio : mp3, wav, ogg, m4a, aac…). Le lecteur du site
+ * diffuse ensuite directement l'URL du CDN — plus de proxy serveur.
+ */
+export async function uploadAudioToCloudinary(
+  buffer: Buffer, filename: string, mime: string, cfg: StorageConfig,
+): Promise<{ url: string; publicId: string }> {
+  const timestamp = Math.floor(Date.now() / 1000).toString()
+  const folder = `${CLOUDINARY_FOLDER}/audio`
+  const params = { folder, timestamp }
+  const signature = cloudinarySignature(params, cfg.cloudApiSecret)
+
+  const fd = new FormData()
+  fd.append('file', new Blob([new Uint8Array(buffer)], { type: mime }), safeName(filename))
+  fd.append('api_key', cfg.cloudApiKey)
+  fd.append('timestamp', timestamp)
+  fd.append('folder', folder)
+  fd.append('signature', signature)
+  // Les gros fichiers : le upload direct reste limité par le timeout —
+  // Cloudinary recommande chunked pour > 100 Mo, hors de notre périmètre.
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloudName}/video/upload`, {
+    method: 'POST',
+    body: fd,
+    signal: AbortSignal.timeout(180_000),
   })
   const json = await res.json().catch(() => ({} as Record<string, unknown>))
   if (!res.ok || !json.secure_url) {
@@ -304,6 +343,22 @@ export async function storeImage(buffer: Buffer, filename: string, mime: string)
 
 export async function storeAudio(buffer: Buffer, filename: string, mime: string): Promise<UploadOutcome> {
   const cfg = await getStorageConfig()
+  // Voie principale : Cloudinary (mêmes identifiants que les images) —
+  // l'audio est servi directement par le CDN, sans proxy serveur.
+  if (cloudinaryConfigured(cfg)) {
+    try {
+      const { url } = await uploadAudioToCloudinary(buffer, filename, mime, cfg)
+      return { url, provider: 'cloudinary' }
+    } catch (e) {
+      console.error('[storage] Cloudinary audio indisponible, repli local :', e)
+      const url = await saveLocal('uploads/audio', buffer, filename, mime)
+      return {
+        url, provider: 'local',
+        warning: `Cloudinary indisponible (${e instanceof Error ? e.message : 'erreur'}) — audio stocké localement.`,
+      }
+    }
+  }
+  // Repli historique : Google Drive (si configuré sans Cloudinary)
   if (driveConfigured(cfg)) {
     try {
       const { fileId } = await uploadAudioToDrive(buffer, filename, mime, cfg)
@@ -333,11 +388,12 @@ export async function testStorageConnections(): Promise<StorageTestResult> {
     cloudinary = { ok: false, message: 'Non configuré — renseignez le cloud name, la clé API et le secret.' }
   } else {
     try {
-      const timestamp = Math.floor(Date.now() / 1000).toString()
-      const signature = cloudinarySignature({ timestamp }, cfg.cloudApiSecret)
+      // /resources est une endpoint de l'ADMIN API Cloudinary : elle
+      // s'authentifie en HTTP Basic (clé:secret), pas par signature.
+      const basic = Buffer.from(`${cfg.cloudApiKey}:${cfg.cloudApiSecret}`).toString('base64')
       const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${cfg.cloudName}/resources?max_results=1&api_key=${encodeURIComponent(cfg.cloudApiKey)}&timestamp=${timestamp}&signature=${signature}`,
-        { signal: AbortSignal.timeout(20_000) },
+        `https://api.cloudinary.com/v1_1/${cfg.cloudName}/resources?max_results=1`,
+        { headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(20_000) },
       )
       cloudinary = res.ok
         ? { ok: true, message: `Connecté au cloud « ${cfg.cloudName} ».` }

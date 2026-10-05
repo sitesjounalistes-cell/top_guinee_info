@@ -614,3 +614,23 @@ Failles transversales trouvées & corrigées :
 - Vitesse : home restructurée (tâche 12) confirmée nécessaire et suffisante
   en prod (Vercel même région que Neon) ; latence locale Guinée→Ohio
   documentée
+
+════════════════════════════════════════════════════════════════════
+ Tâche 14 — STOCKAGE UNIFIÉ CLOUDINARY (images + audios)
+════════════════════════════════════════════════════════════════════
+
+- uploadAudioToCloudinary (resource_type « video », folder topguinee/
+  audio) : les audios sont désormais servis DIRECTEMENT par le CDN —
+  plus de proxy serveur pour les nouveaux fichiers
+- storeAudio : Cloudinary d'abord → repli Drive (si configuré sans
+  Cloudinary) → repli local ; messages d'avertissement conservés
+- Identifiants du compte configurés en base (Paramètres → Stockage,
+  secrets masqués à l'affichage) : actifs partout sans variable d'env
+- BUG corrigé dans « Tester les connexions » : /resources est une
+  endpoint ADMIN API → authentification HTTP Basic (clé:secret) et non
+  signature sha1 (401 systématique avant)
+- Validation réelle sur le compte : upload image ✓, upload audio ✓,
+  URLs CDN 200 ✓, test de connexion « Connecté au cloud » ✓ — puis
+  destruction propre des fichiers de test (destroy signé)
+- UI Paramètres → Stockage : « Cloudinary — images et audios »
+  (recommandé/actif), Drive relabelisé « repli audio (facultatif) »

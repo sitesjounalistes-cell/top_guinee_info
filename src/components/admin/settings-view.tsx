@@ -372,9 +372,11 @@ export function SettingsView() {
             {/* Cloudinary (images) */}
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-tg-navy">Cloudinary — images</p>
+                <p className="text-sm font-semibold text-tg-navy">Cloudinary — images et audios</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Les images importées (couvertures d&apos;articles, logos, publicités) sont automatiquement transférées sur Cloudinary.
+                  Tout est transféré sur Cloudinary : images (couvertures, logos, publicités) ET fichiers audio
+                  (podcasts, émissions) — servis directement par le CDN, y compris sur les hébergements à
+                  système de fichiers éphémère (Vercel). Recommandé : c&apos;est la configuration active.
                   Créez un compte gratuit sur cloudinary.com → Dashboard → copiez Cloud name / API key / API secret.
                 </p>
               </div>
@@ -417,11 +419,12 @@ export function SettingsView() {
             {/* Google Drive (audio / podcasts) */}
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-tg-navy">Google Drive — audio / podcasts</p>
+                <p className="text-sm font-semibold text-tg-navy">Google Drive — repli audio (facultatif)</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Les podcasts et fichiers audio sont transférés dans ce dossier Google Drive et diffusés en streaming depuis Drive
-                  (le son n&apos;est jamais stocké sur le site). Dans Google Cloud : activez l&apos;API Drive, créez un compte de service,
-                  générez une clé JSON, puis partagez le dossier Drive avec l&apos;e-mail du compte de service (lecteur).
+                  Utilisé pour les audio UNIQUEMENT si Cloudinary n&apos;est pas configuré : les fichiers sont
+                  transférés dans ce dossier Drive et diffusés en streaming (le son n&apos;est jamais stocké sur
+                  le site). Dans Google Cloud : activez l&apos;API Drive, créez un compte de service, générez une
+                  clé JSON, puis partagez le dossier Drive avec l&apos;e-mail du compte de service (lecteur).
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -469,8 +472,8 @@ export function SettingsView() {
             </div>
             {storageTest && (
               <div className="space-y-2">
-                <StorageTestBadge label="Cloudinary (images)" result={storageTest.cloudinary} />
-                <StorageTestBadge label="Google Drive (audio)" result={storageTest.drive} />
+                <StorageTestBadge label="Cloudinary (images + audios)" result={storageTest.cloudinary} />
+                <StorageTestBadge label="Google Drive (repli audio)" result={storageTest.drive} />
               </div>
             )}
           </div>

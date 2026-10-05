@@ -57,16 +57,19 @@ SÉCURITÉ — À FAIRE AVANT LA MISE EN LIGNE
     nom de domaine — voir Caddyfile).
   • Changer les mots de passe des comptes ci-dessus.
 
-STOCKAGE DES MÉDIAS (optionnel, production)
-───────────────────────────────────────────
-  Sans configuration, les images et audios sont stockés localement
-  (public/uploads). Pour externaliser :
-  • Images → Cloudinary   : Paramètres → Stockage (cloud name, clé, secret)
-  • Audio → Google Drive  : Paramètres → Stockage (dossier, compte de
-    service, clé privée) — streaming via /api/public/media/audio/[fileId]
-  • Tester avec le bouton « Tester les connexions ».
+STOCKAGE DES MÉDIAS — Cloudinary (configuré ✓)
+──────────────────────────────────────────────
+  Images ET audios sont transférés sur Cloudinary (CDN) — identifiants
+  déjà renseignés dans Paramètres → Stockage (stockés en base, masqués
+  à l'affichage ; actifs immédiatement en local comme sur Vercel).
+  • Bouton « Tester les connexions » : doit afficher « Connecté au
+    cloud ».
+  • Google Drive reste disponible en repli audio (facultatif) si
+    Cloudinary n'était pas configuré.
   • Vidéos : liens YouTube insérés dans les articles / direct TV dans
     Paramètres → FM & TV (YouTube ou Facebook).
+  ⚠ Sur Vercel le système de fichiers est éphémère : Cloudinary est la
+  voie de persistance des médias entre les déploiements.
 
 TRADUCTION DU SITE (6 LANGUES)
 ──────────────────────────────
