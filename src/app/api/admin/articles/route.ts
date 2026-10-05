@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { requireUser, hasMinRole } from '@/lib/auth'
-import { sanitizeRichText, sanitizeInline, safeMediaUrl, safeHttpUrl } from '@/lib/sanitize'
+import { sanitizeRichText, sanitizeInline, safeMediaUrl, safeHttpUrl, stripHtml } from '@/lib/sanitize'
 import {
   unauth, bad, serverError, logAction, parseDate, computeReadTime,
   uniqueSlugIn, articleCardInclude, articleFullInclude, toCard, toFull,
@@ -90,7 +90,9 @@ export async function POST(req: Request) {
       ? (canPublish ? body.status : (body.status === 'REVIEW' ? 'REVIEW' : 'DRAFT'))
       : 'DRAFT'
     const coverImage = body?.coverImage ? safeMediaUrl(body.coverImage) || null : null
-    const slug = await uniqueSlugIn(db.article, title)
+    // Le slug est forgé depuis le TEXTE du titre (les balises enrichies
+    // — gras, police — n'ont pas leur place dans une URL)
+    const slug = await uniqueSlugIn(db.article, stripHtml(title))
     // Le corps HTML est nettoyé par liste blanche AVANT stockage (anti-XSS stocké)
     const bodyHtml = sanitizeRichText(String(body?.body ?? ''))
     const readTime = computeReadTime(bodyHtml)

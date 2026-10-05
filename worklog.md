@@ -571,3 +571,46 @@ i18n public (6 langues : FR/EN/ES/IT/AR/ZH) :
   parallèles (8 vagues séquencées auparavant) — 24 s → 14 s depuis une
   connexion Guinée→Ohio ; < 1 s attendu sur Vercel (même région AWS
   que Neon)
+
+════════════════════════════════════════════════════════════════════
+ Tâche 13 — AUDIT DE VÉRIFICATION COMPLET (2 phases)
+════════════════════════════════════════════════════════════════════
+
+Vérifications réelles (serveur + base Neon) :
+1. Traductions — 6/6 langues opérationnelles sur les contenus :
+   EN/IT/ZH complets, ES complété par warm-up (budget 9 s), AR complet
+   (rubriques incluses : سياسي/اقتصاد/المجتمع). Coquille « Charger plus »
+   corrigée. Traduction réelle vérifiée phrase par phrase.
+2. FM/TV — intégrés et ACTIVABLES/DÉSACTIVABLES en direct : bascule
+   admin (PUT settings) → front immédiat (fmEnabled/tvEnabled off/on ✓)
+3. Communication dashboard ↔ site — création d'une rubrique puis d'un
+   article enrichi (gras + police + 2 images en 2 sections) : visible
+   immédiatement dans la home, la liste publique, le sitemap et la page
+   SSR (titre/meta corrects, HTML enrichi rendu) — puis nettoyage.
+   FAILLE TROUVÉE & CORRIGÉE : le slug était forgé depuis le titre HTML
+   (balises dans l'URL) → slug désormais généré depuis le TEXTE (stripHtml)
+   à la création et à l'édition.
+4. Polices — les 4 classes (font-display/serif/sans/mono) vérifiées
+   DANS le CSS compilé, familles Playfair/Inter chargées (woff2).
+5. Multi-images — 2 images en 2 sections rendues dans l'article ;
+   insertion à la position du curseur, aperçu YouTube intégré.
+6. Cloudinary/Drive — endpoint « Tester les connexions » : réponses
+   propres (« Non configuré — renseignez… ») ; upload avec repli local
+   vérifié (fichier servi). FAILLE TROUVÉE & CORRIGÉE : les uploads du
+   mode standalone étaient perdus à chaque rebuild (dossier .next
+   écrasé) → start.mjs rapatrie/resynchronise public/uploads à chaque
+   démarrage. Sur Vercel (FS éphémère), Cloudinary/Drive reste la voie
+   obligatoire — documenté.
+7. Logos — matrice de cohérence vérifiée : lockup clair (masthead
+   desktop h-24/28 + mobile h-10), lockup sombre (footer h-20/24, drawer
+   mobile, écran maintenance), emblème seul (loader SPA, admin, login,
+   page article sobre), favicons icon/apple, og.jpg 1200×630 — alt
+   systématiques, dimensions maîtrisées.
+
+Failles transversales trouvées & corrigées :
+- Pool de connexions Prisma saturé (16 requêtes parallèles / limite 5 /
+  timeout 10 s → 500 aléatoires sous charge locale) → pool_timeout=30 +
+  connect_timeout=15 dans l'URL Neon (.env et .env.example)
+- Vitesse : home restructurée (tâche 12) confirmée nécessaire et suffisante
+  en prod (Vercel même région que Neon) ; latence locale Guinée→Ohio
+  documentée

@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireUser, hasMinRole } from '@/lib/auth'
-import { sanitizeRichText, sanitizeInline, safeMediaUrl, safeHttpUrl } from '@/lib/sanitize'
+import { sanitizeRichText, sanitizeInline, safeMediaUrl, safeHttpUrl, stripHtml } from '@/lib/sanitize'
 import {
   unauth, bad, forbidden, notFound, serverError, logAction, parseDate, computeReadTime,
   uniqueSlugIn, articleFullInclude, toFull, normalizeTagNames, resolveTagId,
@@ -92,7 +92,7 @@ export async function PUT(
     }
 
     if (body?.slug !== undefined && body.slug) {
-      data.slug = await uniqueSlugIn(db.article, String(body.slug), id)
+      data.slug = await uniqueSlugIn(db.article, stripHtml(String(body.slug)), id)
     }
 
     if (body?.status !== undefined) {

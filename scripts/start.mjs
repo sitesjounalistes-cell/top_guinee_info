@@ -45,6 +45,19 @@ for (const [from, to] of [
   }
 }
 
+// Les médias uploadés en mode standalone atterrissent dans public/uploads DU
+// STANDALONE — dossier écrasé à chaque rebuild : on les rapatrie vers le
+// public/ du projet AVANT toute copie, puis on resynchronise les uploads
+// (toujours, pas seulement à la première création).
+const uploadsFrom = path.join(target, 'public', 'uploads')
+const uploadsRoot = path.join(root, 'public', 'uploads')
+if (fs.existsSync(uploadsFrom)) {
+  fs.cpSync(uploadsFrom, uploadsRoot, { recursive: true })
+}
+if (fs.existsSync(uploadsRoot)) {
+  fs.cpSync(uploadsRoot, uploadsFrom, { recursive: true })
+}
+
 console.log(`▶ Serveur Topguinee.info (${path.relative(root, target)})`)
 
 // Le serveur standalone charge son propre .env : on le resynchronise sur

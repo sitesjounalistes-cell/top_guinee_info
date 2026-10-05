@@ -147,7 +147,7 @@ const fr: Dict = {
   resultsFor: 'Résultats pour',
   noResults: 'Aucun résultat',
   noResultsDesc: 'Essayez d’autres mots-clés ou parcourez nos rubriques.',
-  loadMore: ' Charger plus',
+  loadMore: 'Charger plus',
   page: 'Page',
   errorTitle: 'Une erreur est survenue',
   errorDesc: 'Impossible de charger ce contenu. Vérifiez votre connexion puis réessayez.',
