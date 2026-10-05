@@ -61,6 +61,15 @@ function sameOrigin(req: NextRequest): boolean {
 }
 
 export function proxy(req: NextRequest) {
+  // 0. Accès discret au cockpit : /admin (chemin direct) → /#/admin (route
+  //    du SPA). Aucun lien visible depuis le site public ne mène au cockpit.
+  if (req.nextUrl.pathname === '/admin') {
+    const url = req.nextUrl.clone()
+    url.pathname = '/'
+    url.hash = '#/admin'
+    return NextResponse.redirect(url)
+  }
+
   // 1. Limite de débit globale (premier étage)
   if (rateLimited(`mw:${ipOf(req)}`)) {
     return NextResponse.json({ error: 'Trop de requêtes — réessayez dans un instant.' }, { status: 429 })
@@ -75,5 +84,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: ['/api/:path*', '/admin'],
 }

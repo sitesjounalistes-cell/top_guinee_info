@@ -104,7 +104,6 @@ export default function Page() {
       contacts={globals.contacts}
       socials={globals.socials}
       flash={globals.flash}
-      onOpenAdmin={() => navigate('/admin')}
     />
   )
 }

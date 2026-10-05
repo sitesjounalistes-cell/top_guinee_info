@@ -660,3 +660,21 @@ carte tricolore) n'est plus affiché nulle part.
 - og.jpg : déjà générée avec le lockup + slogan — inchangée
 - logo-map.png conservé dans public/brand comme asset de réserve,
   plus référencé par aucun composant (grep : 0 occurrence)
+
+════════════════════════════════════════════════════════════════════
+ Tâche 16 — COCKPIT DISCRET + FAVICON RÉEL
+════════════════════════════════════════════════════════════════════
+
+- Entrée « Administration » retirée de l'interface publique : icône de
+  la barre supérieure, bouton du menu mobile, lien du pied de page —
+  plus aucun chemin visible ne mène au cockpit (prop onOpenAdmin
+  supprimée de FrontOffice/SiteHeader/SiteFooter, import Settings2 nettoyé)
+- Accès au cockpit : URL directe /admin uniquement. proxy.ts redirige
+  /admin → /#/admin (route SPA) — matcher élargi à '/admin'
+- favicon.ico réel (16/32/48, conteneur ICO à PNG internes) généré
+  depuis le lockup officiel : les navigateurs qui réclament /favicon.ico
+  reçoivent désormais le bon logo (icône.png/apple-icon.png l'étaient
+  déjà ; l'ancien affichage provenait du cache navigateur)
+- Mot de passe ADMIN régénéré en base (scrypt, vérifié par
+  verifyPassword) et communiqué au propriétaire hors dépôt — aucune
+  trace dans le code

@@ -29,18 +29,17 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   ArrowUp, ChevronDown, LifeBuoy, Mail, MapPin, Menu, MessageCircle, Phone, Radio,
-  Search, Settings2, Tv, Wrench, X,
+  Search, Tv, Wrench, X,
 } from 'lucide-react'
 
 // ─── Composant principal ─────────────────────────────────────────────
 
-export function FrontOffice({ route, settings, contacts, socials, flash, onOpenAdmin }: {
+export function FrontOffice({ route, settings, contacts, socials, flash }: {
   route: { segments: string[]; query: URLSearchParams }
   settings: SiteSettings
   contacts: ContactChannel[]
   socials: SocialLink[]
   flash: FlashInfo[]
-  onOpenAdmin: () => void
 }) {
   const { t, lang } = useI18n()
   const segments = route.segments
@@ -122,7 +121,6 @@ export function FrontOffice({ route, settings, contacts, socials, flash, onOpenA
         contacts={contacts}
         activeRubrique={activeRubrique}
         activeSeg0={seg0}
-        onOpenAdmin={onOpenAdmin}
         fmOn={fmOn}
         tvOn={tvOn}
       />
@@ -130,7 +128,7 @@ export function FrontOffice({ route, settings, contacts, socials, flash, onOpenA
       <main className="flex-1 w-full" id="contenu-principal">
         {view}
       </main>
-      <SiteFooter settings={settings} contacts={contacts} socials={socials} onOpenAdmin={onOpenAdmin} fmOn={fmOn} tvOn={tvOn} />
+      <SiteFooter settings={settings} contacts={contacts} socials={socials} fmOn={fmOn} tvOn={tvOn} />
       <ScrollTopButton />
     </div>
   )
@@ -152,13 +150,12 @@ function HeaderAd() {
 
 // ─── Header premium : barre utilitaire + masthead + navigation ───────
 
-function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, onOpenAdmin, fmOn, tvOn }: {
+function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, fmOn, tvOn }: {
   settings: SiteSettings
   socials: SocialLink[]
   contacts: ContactChannel[]
   activeRubrique: string
   activeSeg0: string
-  onOpenAdmin: () => void
   fmOn: boolean
   tvOn: boolean
 }) {
@@ -229,14 +226,6 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
                 ))}
               </nav>
             )}
-            <button
-              onClick={onOpenAdmin}
-              aria-label={t.adminArea}
-              title={t.adminArea}
-              className="p-1.5 text-zinc-600 hover:text-tg-yellow transition-colors"
-            >
-              <Settings2 size={13} aria-hidden />
-            </button>
           </div>
         </div>
       </div>
@@ -552,16 +541,6 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, o
               </div>
             </div>
           )}
-
-          {/* Admin */}
-          <div className="px-4 py-4">
-            <button
-              onClick={() => { setMobileOpen(false); onOpenAdmin() }}
-              className="w-full h-11 rounded-sm border border-white/15 text-[13px] font-medium text-white/60 hover:bg-white/10 hover:text-white flex items-center justify-center gap-2 transition-colors"
-            >
-              <Settings2 size={15} aria-hidden /> {t.adminArea}
-            </button>
-          </div>
         </SheetContent>
       </Sheet>
     </header>
@@ -689,11 +668,10 @@ function FooterColumnTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
-function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
+function SiteFooter({ settings, contacts, socials, fmOn, tvOn }: {
   settings: SiteSettings
   contacts: ContactChannel[]
   socials: SocialLink[]
-  onOpenAdmin: () => void
   fmOn: boolean
   tvOn: boolean
 }) {
@@ -802,11 +780,6 @@ function SiteFooter({ settings, contacts, socials, onOpenAdmin, fmOn, tvOn }: {
             <li><Link to="/contact" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.contactUs}</Link></li>
             <li><Link to="/legal" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.legal}</Link></li>
             <li><Link to="/privacy" className="block py-1.5 text-zinc-400 hover:text-tg-yellow transition-colors">{t.privacy}</Link></li>
-            <li>
-              <button onClick={onOpenAdmin} className="py-1.5 text-zinc-600 hover:text-tg-yellow transition-colors inline-flex items-center gap-1.5">
-                <Settings2 size={12} aria-hidden /> {t.adminArea}
-              </button>
-            </li>
           </ul>
         </div>
       </div>
