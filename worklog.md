@@ -678,3 +678,36 @@ carte tricolore) n'est plus affiché nulle part.
 - Mot de passe ADMIN régénéré en base (scrypt, vérifié par
   verifyPassword) et communiqué au propriétaire hors dépôt — aucune
   trace dans le code
+
+════════════════════════════════════════════════════════════════════
+ Tâche 17 — FM/TV : SOURCES MÉDIAS SANS API GOOGLE DRIVE
+════════════════════════════════════════════════════════════════════
+
+Réponse au besoin : coller un lien Drive (fichier OU dossier) et que
+l'audio joue sur le site, SANS clé ni compte de service Google.
+
+- Nouveau module lib/server/drive-public.ts :
+  • streaming public d'un fichier via uc?export=download&confirm=t
+    (suivi des redirections, transmission de Range, resourcekey ?rk=
+    pour les anciens partages) — aucune credential ;
+  • listing des fichiers audio d'un dossier via embeddedfolderview
+    (HTML statique public), filtrage par extension, 50 max.
+- getDriveFileStream : API Drive d'abord (si compte de service), puis
+  REPLI PUBLIC automatique — le proxy /api/public/media/audio/[fileId]
+  fonctionne désormais sans aucune configuration Drive.
+- POST/PUT /api/admin/episodes : normalisation de la source audio
+  (lib/server/episode-audio.ts) — un lien Drive fichier devient
+  automatiquement /api/public/media/audio/{id} jouable ; un lien de
+  dossier est refusé avec un message guidant vers l'import dédié.
+- POST /api/admin/episodes/drive-import (CHIEF_EDITOR, 5/min) : importe
+  tous les audios d'un dossier Drive partagé en épisodes (titre = nom
+  de fichier, dédoublonnés, publication au choix).
+- Cockpit FM : bouton « Importer un dossier Drive » par émission +
+  dialog avec la procédure de partage ; champ URL de l'épisode annoté
+  (lien Drive fichier accepté).
+- Upload direct : inchangé — Cloudinary d'abord (CDN) ✓ déjà en place.
+- TV : inchangée — liens YouTube (articles vidéo) + direct configurable
+  (Paramètres → TV, y compris direct de chaîne) ✓ déjà en place.
+- Limites documentées : fichiers/dossiers doivent être « Tout le monde
+  avec le lien » ; endpoints publics Google non contractuels (échec
+  propre le cas échéant).

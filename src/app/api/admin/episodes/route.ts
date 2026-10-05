@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireUser, hasMinRole } from '@/lib/auth'
 import { unauth, forbidden, bad, serverError, logAction, parseDate } from '@/lib/server/helpers'
-import { safeMediaUrl } from '@/lib/sanitize'
+import { normalizeEpisodeAudio } from '@/lib/server/episode-audio'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +36,9 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}))
     const emissionId = String(body?.emissionId ?? '').trim()
     const title = String(body?.title ?? '').trim()
-    const audioUrl = safeMediaUrl(body?.audioUrl)
+    const audio = normalizeEpisodeAudio(body?.audioUrl)
+    if ('error' in audio) return bad(audio.error)
+    const audioUrl = audio.url
 
     if (!emissionId) return bad('L\'émission est obligatoire.')
     const emission = await db.emission.findUnique({ where: { id: emissionId } })

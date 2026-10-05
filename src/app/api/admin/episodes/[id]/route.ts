@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireUser, hasMinRole } from '@/lib/auth'
 import { unauth, forbidden, bad, notFound, serverError, logAction, parseDate } from '@/lib/server/helpers'
-import { safeMediaUrl } from '@/lib/sanitize'
+import { normalizeEpisodeAudio } from '@/lib/server/episode-audio'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,9 +35,9 @@ export async function PUT(
     }
     if (body?.description !== undefined) data.description = String(body.description)
     if (body?.audioUrl !== undefined) {
-      const audioUrl = safeMediaUrl(body.audioUrl)
-      if (!audioUrl) return bad('Le fichier audio est obligatoire.')
-      data.audioUrl = audioUrl
+      const audio = normalizeEpisodeAudio(body.audioUrl)
+      if ('error' in audio) return bad(audio.error)
+      data.audioUrl = audio.url
     }
     if (body?.duration !== undefined) data.duration = parseInt(String(body.duration), 10) || 0
     if (body?.guests !== undefined) data.guests = String(body.guests)

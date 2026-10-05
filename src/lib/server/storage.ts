@@ -12,6 +12,7 @@ import crypto from 'crypto'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { getStorageConfig, cloudinaryConfigured, driveConfigured } from './helpers'
+import { publicDriveFileStream } from './drive-public'
 import type { StorageConfig } from './helpers'
 import type { StorageTestResult } from '@/lib/types'
 
@@ -275,31 +276,59 @@ export interface DriveStream {
 /**
  * Proxy de streaming audio depuis Google Drive — avec support de la plage
  * (Range) pour l'avancement/le déplacement dans le lecteur audio du site.
+ *
+ * Deux modes, par ordre de préférence :
+ * 1. API Drive (si un compte de service est configuré) : lit aussi les
+ *    fichiers privés du dossier de la rédaction ;
+ * 2. repli PUBLIC sans aucune clé : l'endpoint `uc?export=download`
+ *    diffuse les fichiers partagés « Tout le monde avec le lien » —
+ *    c'est ce mode qui permet de coller un simple lien Drive.
  */
-export async function getDriveFileStream(fileId: string, range?: string | null): Promise<DriveStream | null> {
-  const cfg = await getStorageConfig()
-  if (!driveConfigured(cfg)) return null
+export async function getDriveFileStream(
+  fileId: string,
+  range?: string | null,
+  resourceKey?: string | null,
+): Promise<DriveStream | null> {
   if (!/^[A-Za-z0-9_-]{10,64}$/.test(fileId)) return null
 
-  const token = await driveAccessToken(cfg)
-  if (!(await driveFileBelongsToFolder(fileId, cfg, token))) return null
+  const cfg = await getStorageConfig()
+  if (driveConfigured(cfg)) {
+    try {
+      const token = await driveAccessToken(cfg)
+      if (await driveFileBelongsToFolder(fileId, cfg, token)) {
+        const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
+        if (range) headers.Range = range
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
-  if (range) headers.Range = range
+        const res = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
+          { headers, signal: AbortSignal.timeout(60_000) },
+        )
+        if (res.ok && res.body) {
+          return {
+            status: res.status, // 200 (tout le fichier) ou 206 (plage)
+            contentType: res.headers.get('content-type') || 'audio/mpeg',
+            contentLength: res.headers.get('content-length') || undefined,
+            contentRange: res.headers.get('content-range') || undefined,
+            acceptRanges: true,
+            body: res.body,
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[storage] streaming Drive via API, bascule sur le mode public', e)
+    }
+  }
 
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
-    { headers, signal: AbortSignal.timeout(60_000) },
-  )
-  if (!res.ok || !res.body) return null
-
+  // Repli public (sans API) : fichier partagé « Tout le monde avec le lien »
+  const pub = await publicDriveFileStream(fileId, range, resourceKey || undefined)
+  if (!pub) return null
   return {
-    status: res.status, // 200 (tout le fichier) ou 206 (plage)
-    contentType: res.headers.get('content-type') || 'audio/mpeg',
-    contentLength: res.headers.get('content-length') || undefined,
-    contentRange: res.headers.get('content-range') || undefined,
+    status: pub.status,
+    contentType: pub.contentType,
+    contentLength: pub.contentLength,
+    contentRange: pub.contentRange,
     acceptRanges: true,
-    body: res.body,
+    body: pub.body,
   }
 }
 

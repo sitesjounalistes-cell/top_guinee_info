@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
-  CalendarClock, Headphones, ImagePlus, Loader2, Mic, Pencil, Plus, Radio,
+  CalendarClock, FolderOpen, Headphones, ImagePlus, Loader2, Mic, Pencil, Plus, Radio,
   Trash2, Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -67,6 +67,13 @@ export function FMManager() {
   const [epEditing, setEpEditing] = useState<Episode | null>(null)
   const [epForm, setEpForm] = useState<EpForm>(EMPTY_EP)
   const [epEmissionId, setEpEmissionId] = useState('')
+
+  // Dialog import dossier Drive
+  const [diOpen, setDiOpen] = useState(false)
+  const [diEmissionId, setDiEmissionId] = useState('')
+  const [diFolderUrl, setDiFolderUrl] = useState('')
+  const [diPublish, setDiPublish] = useState(true)
+  const [importing, setImporting] = useState(false)
 
   const [deleting, setDeleting] = useState<{ kind: 'emission' | 'episode'; id: string; label: string } | null>(null)
   const mountedRef = useRef(false)
@@ -175,6 +182,34 @@ export function FMManager() {
   const onEpisodeAudioUploaded = (url: string | null) => {
     setEpForm((f) => ({ ...f, audioUrl: url || '' }))
   }
+
+  // ── Import Drive ─────────────────────────────────────────────────
+  const openDriveImport = (emissionId: string) => {
+    setDiEmissionId(emissionId)
+    setDiFolderUrl('')
+    setDiPublish(true)
+    setDiOpen(true)
+  }
+
+  const submitDriveImport = async () => {
+    if (!diFolderUrl.trim()) { toast.error('Collez le lien de partage du dossier Drive.'); return }
+    setImporting(true)
+    try {
+      const res = await adminApi.importDriveFolder({ emissionId: diEmissionId, folderUrl: diFolderUrl.trim(), isPublished: diPublish })
+      if (res.created > 0) {
+        toast.success(`${res.created} épisode${res.created > 1 ? 's' : ''} importé${res.created > 1 ? 's' : ''}`, {
+          description: res.skipped > 0 ? `${res.skipped} déjà présent${res.skipped > 1 ? 's' : ''} (ignoré${res.skipped > 1 ? 's' : ''}).` : undefined,
+        })
+      } else {
+        toast.info('Aucun nouvel épisode importé', { description: 'Tous les audios de ce dossier sont déjà dans cette émission.' })
+      }
+      setDiOpen(false)
+      await load()
+    } catch (e) {
+      toast.error('Import impossible', { description: e instanceof Error ? e.message : undefined })
+    } finally { setImporting(false) }
+  }
+
   const submitEpisode = async () => {
     if (!epForm.title.trim()) { toast.error('Le titre de l\'épisode est obligatoire.'); return }
     if (!epForm.audioUrl.trim()) { toast.error('Ajoutez un fichier audio ou une URL.'); return }
@@ -300,11 +335,16 @@ export function FMManager() {
                 </div>
 
                 {/* Épisodes */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <h3 className="font-semibold text-tg-navy flex items-center gap-2"><Headphones size={16} className="text-tg-red" /> Épisodes</h3>
-                  <Button size="sm" onClick={() => openEpCreate(em.id)} className="bg-tg-green hover:bg-tg-green-dark text-white">
-                    <Plus size={14} /> Ajouter un épisode
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openDriveImport(em.id)} className="border-zinc-300 text-tg-navy hover:bg-tg-gray">
+                      <FolderOpen size={14} /> Importer un dossier Drive
+                    </Button>
+                    <Button size="sm" onClick={() => openEpCreate(em.id)} className="bg-tg-green hover:bg-tg-green-dark text-white">
+                      <Plus size={14} /> Ajouter un épisode
+                    </Button>
+                  </div>
                 </div>
 
                 {eps.length === 0 ? (
@@ -462,8 +502,13 @@ export function FMManager() {
                 onChange={onEpisodeAudioUploaded}
               />
               <div className="space-y-1">
-                <Label htmlFor="ep-audio-url" className="text-[11px] text-muted-foreground">…ou coller une URL manuellement</Label>
-                <Input id="ep-audio-url" value={epForm.audioUrl} onChange={(e) => setEpForm({ ...epForm, audioUrl: e.target.value })} placeholder="https://…/episode.mp3" className="h-8 text-xs font-mono" />
+                <Label htmlFor="ep-audio-url" className="text-[11px] text-muted-foreground">
+                  …ou coller une URL (lien Google Drive d'un fichier audio accepté — converti automatiquement)
+                </Label>
+                <Input id="ep-audio-url" value={epForm.audioUrl} onChange={(e) => setEpForm({ ...epForm, audioUrl: e.target.value })} placeholder="https://drive.google.com/file/d/…  ou  https://…/episode.mp3" className="h-8 text-xs font-mono" />
+                <p className="text-[10.5px] text-muted-foreground">
+                  Drive : partagez le fichier en « Tout le monde avec le lien ». Un dossier entier ? Utilisez « Importer un dossier Drive ».
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -505,6 +550,40 @@ export function FMManager() {
             <Button variant="outline" onClick={() => setEpOpen(false)}>Annuler</Button>
             <Button onClick={submitEpisode} disabled={saving} className="bg-tg-red hover:bg-tg-red-dark text-white">
               {saving ? <Loader2 size={15} className="animate-spin" /> : 'Enregistrer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog import dossier Drive */}
+      <Dialog open={diOpen} onOpenChange={setDiOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><FolderOpen size={17} className="text-tg-green" /> Importer un dossier Drive</DialogTitle>
+            <DialogDescription>
+              Chaque fichier audio du dossier devient un épisode de « {emissions.find((e) => e.id === diEmissionId)?.title} », diffusé en streaming sans clé API.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <div className="rounded-xl border border-tg-green/40 bg-tg-green/5 px-3.5 py-2.5 text-[11.5px] text-tg-navy leading-relaxed">
+              Dans Google Drive : clic droit sur le dossier → <strong>Partager</strong> → <strong>Général</strong> → « <strong>Tout le monde avec le lien</strong> » (Lecteur), puis copiez le lien du dossier.
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="di-url">Lien de partage du dossier <span className="text-tg-red">*</span></Label>
+              <Input id="di-url" value={diFolderUrl} onChange={(e) => setDiFolderUrl(e.target.value)} placeholder="https://drive.google.com/drive/folders/…" className="text-xs font-mono" />
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-3">
+              <div>
+                <p className="text-sm font-medium text-tg-navy">Publier les épisodes importés</p>
+                <p className="text-[11px] text-muted-foreground">Audios MP3, M4A, WAV, OGG, OPUS, FLAC, AAC — titres = noms de fichiers</p>
+              </div>
+              <Switch checked={diPublish} onCheckedChange={setDiPublish} aria-label="Publier les épisodes importés" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDiOpen(false)} disabled={importing}>Annuler</Button>
+            <Button onClick={submitDriveImport} disabled={importing} className="bg-tg-green hover:bg-tg-green-dark text-white">
+              {importing ? <Loader2 size={15} className="animate-spin" /> : <FolderOpen size={15} />} Importer
             </Button>
           </DialogFooter>
         </DialogContent>

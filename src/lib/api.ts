@@ -134,6 +134,8 @@ export const adminApi = {
   createEpisode: (body: Record<string, unknown>) => request<{ episode: Episode }>('/api/admin/episodes', { method: 'POST', body: JSON.stringify(body) }),
   updateEpisode: (id: string, body: Record<string, unknown>) => request<{ episode: Episode }>(`/api/admin/episodes/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteEpisode: (id: string) => request<{ ok: boolean }>(`/api/admin/episodes/${id}`, { method: 'DELETE' }),
+  importDriveFolder: (body: { emissionId: string; folderUrl: string; isPublished: boolean }) =>
+    request<{ created: number; skipped: number; episodes: { id: string; title: string }[] }>('/api/admin/episodes/drive-import', { method: 'POST', body: JSON.stringify(body) }),
 
   contacts: () => request<{ contacts: ContactChannel[] }>('/api/admin/contacts'),
   createContact: (body: Record<string, unknown>) => request<{ contact: ContactChannel }>('/api/admin/contacts', { method: 'POST', body: JSON.stringify(body) }),

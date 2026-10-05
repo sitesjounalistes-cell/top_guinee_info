@@ -1,6 +1,10 @@
 // GET /api/public/media/audio/[fileId] — proxy de streaming Google Drive (§6.3)
 // L'audio n'est jamais stocké sur le site : à chaque écoute, le serveur
 // demande le flux à Google Drive et le relaie (avec support de Range).
+// Fonctionne SANS clé API : les liens partagés « Tout le monde avec le
+// lien » sont diffusés via l'endpoint public uc?export=download (repli
+// automatique si le compte de service n'est pas configuré). Le paramètre
+// facultatif ?rk= transmet la resourcekey des anciens partages modifiés.
 // Anti-abus : limite de débit par IP — un flood de requêtes ne peut plus
 // épuiser le quota du compte de service ni la bande passante sortante.
 import { NextResponse } from 'next/server'
@@ -17,11 +21,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ fileId: string 
     }
 
     const { fileId } = await ctx.params
-    const stream = await getDriveFileStream(fileId, req.headers.get('range'))
+    const resourceKey = new URL(req.url).searchParams.get('rk')
+    const stream = await getDriveFileStream(fileId, req.headers.get('range'), resourceKey)
 
     if (!stream) {
       return NextResponse.json(
-        { error: 'Audio indisponible (Google Drive non configuré ou fichier introuvable)' },
+        { error: 'Audio indisponible (fichier Drive introuvable ou non partagé « Tout le monde avec le lien »)' },
         { status: 404 },
       )
     }
