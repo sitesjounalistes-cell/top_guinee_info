@@ -634,3 +634,29 @@ Failles transversales trouvées & corrigées :
   destruction propre des fichiers de test (destroy signé)
 - UI Paramètres → Stockage : « Cloudinary — images et audios »
   (recommandé/actif), Drive relabelisé « repli audio (facultatif) »
+
+════════════════════════════════════════════════════════════════════
+ Tâche 15 — UNIFICATION DU LOGO OFFICIEL (lockup partout)
+════════════════════════════════════════════════════════════════════
+
+Décision : le logo de la page d'accueil (logo-lockup.png — emblème +
+« topguinee .info ») est LE logo officiel. L'emblème seul (logo-map.png,
+carte tricolore) n'est plus affiché nulle part.
+
+- Favicon : src/app/icon.png (512) et apple-icon.png (180) régénérés
+  depuis le lockup complet — lockup centré sur pastille blanche (82 %
+  de largeur), idem brand/icon-192.png et icon-512.png
+- Cockpit (fonds navy) : logo-lockup-dark.png (texte blanc) —
+  BrandLogo de la barre latérale (h-9 + sur-titre « Cockpit éditorial »),
+  écran de vérification de session, écran de connexion (le titre texte
+  redondant est retiré : le nom est DANS le logo)
+- Loader SPA (page.tsx, fond navy) : logo-lockup-dark.png h-16
+- Masthead SSR /article/[slug] (fond blanc) : logo-lockup.png h-[68px]
+  remplace emblème + titre texte recomposé
+- Paramètres → logoUrl par défaut : /brand/logo-lockup.png ; cadre
+  d'aperçu recalé au ratio du lockup (160×96, object-contain)
+- Front-office : utilisait déjà le lockup partout (header clair/sombre,
+  footer, états vides) — aucun changement nécessaire
+- og.jpg : déjà générée avec le lockup + slogan — inchangée
+- logo-map.png conservé dans public/brand comme asset de réserve,
+  plus référencé par aucun composant (grep : 0 occurrence)

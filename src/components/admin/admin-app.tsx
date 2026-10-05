@@ -82,15 +82,11 @@ const SECTION_TITLES: Record<string, string> = {
 // ─── Sous-composants de layout (déclarés hors rendu) ──────────────
 
 function BrandLogo() {
+  // Logo officiel complet (lockup adapté au fond navy : texte blanc)
   return (
-    <div className="flex items-center gap-2.5 px-4 pt-5 pb-2">
-      <span className="w-9 h-9 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0">
-        <img src="/brand/logo-map.png" alt="" className="w-7 h-7 object-contain" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-white font-bold font-display leading-tight truncate">Topguinee<span className="text-tg-red">.</span><span className="text-tg-yellow">info</span></p>
-        <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Cockpit éditorial</p>
-      </div>
+    <div className="px-4 pt-5 pb-2">
+      <img src="/brand/logo-lockup-dark.png" alt="Topguinee.info" className="h-9 w-auto object-contain" width={63} height={36} />
+      <p className="text-[10px] text-zinc-400 uppercase tracking-wider mt-1.5">Cockpit éditorial</p>
     </div>
   )
 }
@@ -240,9 +236,7 @@ export function AdminApp({ route, onExitToSite }: {
   if (authState === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-tg-navy-dark via-tg-navy to-tg-navy-light flex flex-col items-center justify-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden">
-          <img src="/brand/logo-map.png" alt="Logo Topguinee.info" className="w-12 h-12 object-contain" />
-        </div>
+        <img src="/brand/logo-lockup-dark.png" alt="Topguinee.info" className="h-16 w-auto object-contain" width={112} height={64} />
         <div className="flex items-center gap-2.5 text-zinc-300 text-sm">
           <Loader2 size={16} className="animate-spin text-tg-yellow" /> Vérification de la session…
         </div>

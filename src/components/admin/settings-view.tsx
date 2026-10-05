@@ -245,8 +245,8 @@ export function SettingsView() {
               <Label>Logo du site</Label>
               {draft.logoUrl ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-24 h-24 rounded-xl border border-zinc-200 bg-white overflow-hidden relative shrink-0">
-                    <FadeImage src={draft.logoUrl} alt="Logo du site" fill sizes="100px" />
+                  <div className="w-40 h-24 rounded-xl border border-zinc-200 bg-white overflow-hidden relative shrink-0 flex items-center justify-center">
+                    <FadeImage src={draft.logoUrl} alt="Logo du site" fill sizes="160px" className="object-contain p-2" />
                   </div>
                   <div className="space-y-2">
                     <label className="inline-flex items-center gap-2 text-sm border border-zinc-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-tg-gray transition-colors text-tg-navy">

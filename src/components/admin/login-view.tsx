@@ -64,15 +64,9 @@ export function LoginView({ onLoggedIn, onExitToSite }: {
       </button>
 
       <main className="w-full max-w-md relative z-10">
-        {/* Logo & marque */}
+        {/* Logo officiel complet (lockup adapté au fond navy) */}
         <div className="flex flex-col items-center mb-8 tg-fade-up">
-          <div className="w-20 h-20 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden mb-4">
-            {/* Emblème officiel : carte de la Guinée tricolore */}
-            <img src="/brand/logo-map.png" alt="Logo Topguinee.info" className="w-[70px] h-[70px] object-contain" />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white font-display tracking-tight">
-            Topguinee<span className="text-tg-red">.</span><span className="text-tg-yellow">info</span>
-          </h1>
+          <img src="/brand/logo-lockup-dark.png" alt="Topguinee.info" className="h-16 w-auto object-contain mb-4" width={112} height={64} />
           <p className="text-zinc-300 text-sm mt-1.5 flex items-center gap-2">
             <span className="tg-flag-stripe" aria-hidden><i /></span>
             L&apos;information au-delà du factuel

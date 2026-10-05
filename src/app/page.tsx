@@ -59,15 +59,9 @@ export default function Page() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 bg-tg-navy">
-        <div className="w-20 h-20 rounded-2xl bg-white shadow-2xl flex items-center justify-center overflow-hidden">
-          <img src="/brand/logo-map.png" alt="Logo Topguinee.info" className="w-[70px] h-[70px] object-contain" />
-        </div>
-        <div className="text-center space-y-1">
-          <p className="text-white font-bold text-xl font-display">
-            Topguinee<span className="text-tg-red">.</span><span className="text-tg-yellow">info</span>
-          </p>
-          <p className="text-zinc-400 text-xs italic">« L&apos;information au-delà du factuel »</p>
-        </div>
+        {/* Logo officiel complet (lockup adapté au fond navy) */}
+        <img src="/brand/logo-lockup-dark.png" alt="Topguinee.info" className="h-16 w-auto object-contain" width={112} height={64} />
+        <p className="text-zinc-400 text-xs italic">« L&apos;information au-delà du factuel »</p>
         <div className="flex items-center gap-2 text-zinc-400 text-sm">
           <Loader2 size={15} className="animate-spin text-tg-yellow" /> Chargement…
         </div>

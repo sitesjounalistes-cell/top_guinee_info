@@ -235,11 +235,9 @@ export default async function ArticlePage(
           </div>
         </div>
         <div className={`${SHELL} py-5`}>
-          <a href="/" className="mx-auto flex w-max items-center gap-3" aria-label={`${settings.siteName} — accueil`}>
-            <img src="/brand/logo-map.png" alt="" width={44} height={44} className="h-11 w-11 object-contain" />
-            <span className="font-display text-2xl font-bold tracking-tight text-tg-navy">
-              Topguinee<span className="text-tg-red">.</span><span className="text-tg-yellow">info</span>
-            </span>
+          {/* Logo officiel complet (lockup, fond clair) */}
+          <a href="/" className="mx-auto flex w-max items-center" aria-label={`${settings.siteName} — accueil`}>
+            <img src="/brand/logo-lockup.png" alt={settings.siteName} width={132} height={76} className="h-[68px] w-auto object-contain" />
           </a>
         </div>
         <nav className={`${SHELL} flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-zinc-100 py-3`} aria-label={t.rubrics}>

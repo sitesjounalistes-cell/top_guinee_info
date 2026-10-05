@@ -220,7 +220,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   siteName: 'Topguinee.info',
   slogan: 'L\'information au-delà du factuel',
   fmLabel: 'FM',
-  logoUrl: '/brand/logo-map.png',
+  logoUrl: '/brand/logo-lockup.png',
   seoTitle: 'Topguinee.info — L\'information au-delà du factuel',
   seoDescription: 'Toute l\'actualité guinéenne et internationale : politique, économie, société, sport, culture.',
   seoImage: '',
