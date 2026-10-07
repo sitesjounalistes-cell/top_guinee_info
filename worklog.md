@@ -742,3 +742,32 @@ Peaufinages cockpit (dialog épisode) :
 
 Note d'exploitation : disque C: saturé (100 %) — build passé après
 purge de .next et des temporaires ; à surveiller côté machine locale.
+
+════════════════════════════════════════════════════════════════════
+ Tâche 19 — SOUS-RUBRIQUES CLIQUABLES + FLASH INFO TOUJOURS ALIMENTÉ
+════════════════════════════════════════════════════════════════════
+
+Diagnostic des deux signalements :
+- Sous-rubriques « figées » : gouvernance/élections (Politique),
+  mines-energie (Économie), football (Sport) avaient 0 article — le
+  clic ouvrait une page vide sans contexte. Le routeur et le menu
+  étaient sains (le bouton « Tout voir » du même menu fonctionnait).
+- Flash Info absent : les 4 flashs en base étaient expirés depuis le
+  28/09 → l'API renvoyait une liste vide → bandeau masqué.
+
+Corrections :
+1. Liens des sous-rubriques (menu desktop + menu mobile) alignés sur
+   le mécanisme des chips : /rubrique/{parent}?sub={enfant} — on reste
+   dans la rubrique parente avec le filtre actif, l'en-tête parent et
+   les chips visibles ; si la sous-rubrique n'a pas encore d'article,
+   l'état vide explicite propose « ← Voir toute la rubrique ».
+   (Avant : /rubrique/{enfant} isolé, sans articles ni repère.)
+2. GET /api/public/flash enrichi : aux flashs manuels actifs
+   s'ajoutent AUTOMATIQUEMENT les titres des 6 derniers articles
+   publiés (dédoublonnés des flashs liés à un article, titres
+   nettoyés de tout HTML, cliquables vers l'article, traduits comme
+   le reste en langue étrangère). Le bandeau Flash Info ne tombe plus
+   jamais vide tant que la rédaction publie — les flashs manuels
+   restent prioritaires (urgence d'abord).
+3. Vérifié en base : fusion = 0 manuel + 6 titres récents → bandeau
+   alimenté immédiatement.

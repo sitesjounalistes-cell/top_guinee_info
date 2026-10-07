@@ -387,7 +387,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, f
                   <DropdownMenuSeparator />
                   {children.map((c) => (
                     <DropdownMenuItem key={c.id} asChild>
-                      <Link to={`/rubrique/${c.slug}`} className="cursor-pointer text-[13px] py-2">
+                      <Link to={`/rubrique/${r.slug}?sub=${c.slug}`} className="cursor-pointer text-[13px] py-2">
                         <RubriqueIcon icon={c.icon} size={13} style={{ color: c.color }} />
                         {c.name}
                       </Link>
@@ -508,7 +508,7 @@ function SiteHeader({ settings, socials, contacts, activeRubrique, activeSeg0, f
                   </span>
                 </MobileNavLink>
                 {(r.children || []).filter((c) => c.isActive).sort((a, b) => a.order - b.order).map((c) => (
-                  <MobileNavLink key={c.id} to={`/rubrique/${c.slug}`} indent>
+                  <MobileNavLink key={c.id} to={`/rubrique/${r.slug}?sub=${c.slug}`} indent>
                     <span className="flex items-center gap-2.5 text-white/70 text-[13.5px]">
                       <RubriqueIcon icon={c.icon} size={13} style={{ color: c.color }} />
                       {c.name}
