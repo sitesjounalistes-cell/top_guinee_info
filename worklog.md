@@ -812,3 +812,27 @@ Corrections :
 
 Note exploitation : disque C: saturé — caches bun/npm purgés (~3,4 Go)
 pour permettre le build ; un nettoyage machine s'impose côté utilisateur.
+
+════════════════════════════════════════════════════════════════════
+ Tâche 21 — SITEMAP SUR L'ORIGINE RÉELLE + FACTORISATION
+════════════════════════════════════════════════════════════════════
+
+Vérification en réel du déploiement après la tâche 20 :
+- page article : HTTP 200, og:title/og:url/og:image corrects, image
+  Cloudinary accessible (200), twitter:card summary_large_image,
+  canonical sur l'origine réelle ✓
+- racine : og:image → vercel.app/brand/og.jpg (200) ✓
+- ANOMALIE : /sitemap.xml pointait encore vers topguinee.info (domaine
+  non déployé) — constante locale de repli non mise à jour.
+
+Corrections :
+- nouveau module lib/server/site-origin.ts : siteOrigin() (en-têtes de
+  la requête, repli NEXT_PUBLIC_SITE_URL→vercel.app) + absolutize() —
+  logique unique partagée
+- sitemap.ts : origine dynamique (suivra vercel.app puis le domaine
+  définitif sans aucun réglage)
+- page article : utilise le module partagé (copie locale retirée)
+- les aperçus de partage restants proviennent des CACHES des réseaux
+  (WhatsApp/Facebook/LinkedIn) : procédure d'invalidation transmise
+  (Facebook Sharing Debugger « Scrape Again », LinkedIn Post Inspector,
+  nouveau chat WhatsApp) — le serveur, lui, est vérifié conforme.

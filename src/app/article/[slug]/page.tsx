@@ -13,6 +13,7 @@ import {
   getSettings, pickBanner, clientIp, isBot, oncePerWindow, dayStr,
 } from '@/lib/server/helpers'
 import { safeHttpUrl, stripHtml } from '@/lib/sanitize'
+import { siteOrigin, absolutize, SITE_URL } from '@/lib/server/site-origin'
 import { getDict, isLang } from '@/lib/i18n/dicts'
 import { translateCard, translateCards, translateHtml, translateText, translateTexts } from '@/lib/server/translate'
 import type { ArticleCardData } from '@/lib/types'
@@ -24,34 +25,6 @@ export const dynamic = 'force-dynamic'
 
 const SHELL = 'max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8'
 const RANK_COLORS = ['#D21034', '#c99700', '#00734B', '#14213D', '#a80c28']
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://topguineeinfo.vercel.app'
-
-/**
- * Origine RÉELLE du site telle que servie (vercel.app, domaine final,
- * local…). Déduite des en-têtes de la requête — les aperçus de partage
- * (WhatsApp, Facebook, LinkedIn) chargent og:image/og:url depuis cette
- * origine : pointer sur un domaine non déployé donnerait un aperçu vide.
- * Repli : NEXT_PUBLIC_SITE_URL.
- */
-async function siteOrigin(): Promise<string> {
-  try {
-    const h = await headers()
-    const host = h.get('x-forwarded-host') || h.get('host')
-    if (host && !/^(localhost|127\.0\.0\.1)(:|$)/.test(host)) {
-      const proto = h.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
-      return `${proto}://${host}`
-    }
-    if (host) return `http://${host}`
-  } catch { /* hors contexte requête */ }
-  return SITE_URL
-}
-
-/** URL absolue fidèle à l'origine réelle (les crawlers ne lisent pas les relatives). */
-function absolutize(url: string | undefined | null, origin: string): string | undefined {
-  if (!url) return undefined
-  if (/^https?:\/\//i.test(url)) return url
-  return `${origin}${url.startsWith('/') ? '' : '/'}${url}`
-}
 
 // Formatage léger (la page est un composant serveur : pas d'import client)
 const DATE_LOCALES: Record<string, string> = {
