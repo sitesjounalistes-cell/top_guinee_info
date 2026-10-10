@@ -286,7 +286,7 @@ export function RubriqueView({ slug, sub, page, sort }: { slug: string; sub?: st
             ) : null}
           </div>
           {home?.ads?.sidebar && (
-            <aside className="hidden lg:block lg:col-start-3" aria-label="Publicité">
+            <aside className="lg:col-start-3" aria-label="Publicité">
               <ImpressionBanner banner={home.ads.sidebar} position="sidebar" />
             </aside>
           )}

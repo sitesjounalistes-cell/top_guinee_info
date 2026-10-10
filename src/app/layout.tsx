@@ -19,7 +19,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://topguinee.info"),
+  // Base de résolution des URLs relatives (og:image du layout racine).
+  // Le domaine définitif topguinee.info remplacera cette valeur dès qu'il
+  // sera déployé — les pages article construisent leurs propres URLs
+  // absolues depuis l'origine réellement servie (cf. article/[slug]).
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://topguineeinfo.vercel.app"),
   title: {
     default: "Topguinee.info — L'information au-delà du factuel",
     template: "%s | Topguinee.info",

@@ -454,10 +454,10 @@ export function AdsManager() {
                 </div>
               </div>
             )}
-            <ImageDropzone value={camImage} onChange={setCamImage} label="Bannière" aspect="aspect-[6/1]" hint="Format recommandé : 728×90 px" />
+            <ImageDropzone value={camImage} onChange={setCamImage} allowVideo label="Bannière" aspect="aspect-[6/1]" hint="Image, GIF animé ou vidéo MP4/WebM (40 Mo max) — Format recommandé : 728×90 px" />
             <div className="space-y-1.5">
               <Label htmlFor="cam-link">Lien de redirection</Label>
-              <Input id="cam-link" value={camForm.linkUrl} onChange={(e) => setCamForm({ ...camForm, linkUrl: e.target.value })} placeholder="https://…" />
+              <Input id="cam-link" value={camForm.linkUrl} onChange={(e) => setCamForm({ ...camForm, linkUrl: e.target.value })} placeholder="https://… (ou www.exemple.com — complété automatiquement)" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">

@@ -24,7 +24,34 @@ export const dynamic = 'force-dynamic'
 
 const SHELL = 'max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8'
 const RANK_COLORS = ['#D21034', '#c99700', '#00734B', '#14213D', '#a80c28']
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://topguinee.info'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://topguineeinfo.vercel.app'
+
+/**
+ * Origine RÉELLE du site telle que servie (vercel.app, domaine final,
+ * local…). Déduite des en-têtes de la requête — les aperçus de partage
+ * (WhatsApp, Facebook, LinkedIn) chargent og:image/og:url depuis cette
+ * origine : pointer sur un domaine non déployé donnerait un aperçu vide.
+ * Repli : NEXT_PUBLIC_SITE_URL.
+ */
+async function siteOrigin(): Promise<string> {
+  try {
+    const h = await headers()
+    const host = h.get('x-forwarded-host') || h.get('host')
+    if (host && !/^(localhost|127\.0\.0\.1)(:|$)/.test(host)) {
+      const proto = h.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
+      return `${proto}://${host}`
+    }
+    if (host) return `http://${host}`
+  } catch { /* hors contexte requête */ }
+  return SITE_URL
+}
+
+/** URL absolue fidèle à l'origine réelle (les crawlers ne lisent pas les relatives). */
+function absolutize(url: string | undefined | null, origin: string): string | undefined {
+  if (!url) return undefined
+  if (/^https?:\/\//i.test(url)) return url
+  return `${origin}${url.startsWith('/') ? '' : '/'}${url}`
+}
 
 // Formatage léger (la page est un composant serveur : pas d'import client)
 const DATE_LOCALES: Record<string, string> = {
@@ -65,7 +92,14 @@ export async function generateMetadata(
   }
   const title = `${stripHtml(article.title)} — ${settings.siteName}`
   const description = stripHtml(article.description || article.subtitle) || undefined
-  const image = article.coverImage || settings.seoImage || undefined
+  const origin = await siteOrigin()
+  // og:image absolue : cover de l'article, sinon image SEO, sinon bannière
+  // de marque — JAMAIS vide (les réseaux affichent sinon un aperçu pauvre)
+  const image = absolutize(
+    article.coverImage || settings.seoImage || '/brand/og.jpg',
+    origin,
+  )
+  const pageUrl = `${origin}/article/${article.slug}`
   return {
     // absolute : le template de titre du layout racine ne doit pas suffixer
     // une seconde fois le nom du site
@@ -78,19 +112,19 @@ export async function generateMetadata(
       description,
       siteName: settings.siteName,
       locale: 'fr_FR',
-      url: `${SITE_URL}/article/${article.slug}`,
+      url: pageUrl,
       publishedTime: article.publishedAt?.toISOString(),
       modifiedTime: article.updatedAt.toISOString(),
       authors: article.author?.name ? [article.author.name] : undefined,
       section: article.rubrique?.name,
       tags: article.tags.map(t => t.tag.name),
-      images: image ? [{ url: image, alt: article.coverAlt || article.title }] : undefined,
+      images: [{ url: image!, alt: article.coverAlt || article.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: image ? [image] : undefined,
+      images: [image!],
     },
   }
 }
@@ -202,7 +236,8 @@ export default async function ArticlePage(
   const rubColor = rub?.color || '#D21034'
   const authorName = article.author?.name || 'Rédaction Topguinee'
   const initial = (authorName.charAt(0) || 'T').toUpperCase()
-  const pageUrl = `${SITE_URL}/article/${article.slug}`
+  const origin = await siteOrigin()
+  const pageUrl = `${origin}/article/${article.slug}`
 
   // JSON-LD NewsArticle (rich results Google Actualités)
   const jsonLd = {
@@ -210,7 +245,7 @@ export default async function ArticlePage(
     '@type': 'NewsArticle',
     headline: stripHtml(article.title),
     description: article.description || article.subtitle || undefined,
-    image: article.coverImage ? [article.coverImage] : undefined,
+    image: article.coverImage ? [absolutize(article.coverImage, origin)] : [absolutize(settings.seoImage || '/brand/og.jpg', origin)],
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
     inLanguage: 'fr',

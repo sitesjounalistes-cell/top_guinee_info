@@ -20,8 +20,13 @@ const AUDIO_TYPES = new Set([
   'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg',
   'audio/mp4', 'audio/aac', 'audio/webm',
 ])
+// Créas vidéo (publicités animées) : conteneurs MP4/WebM/MOV
+const VIDEO_TYPES = new Set([
+  'video/mp4', 'video/webm', 'video/quicktime', 'audio/webm', 'audio/mp4',
+])
 const IMAGE_MAX = 8 * 1024 * 1024   // 8 Mo
 const AUDIO_MAX = 80 * 1024 * 1024  // 80 Mo
+const VIDEO_MAX = 40 * 1024 * 1024  // 40 Mo
 
 // ─── Signature binaire (magic bytes) ──────────────────────────────
 
@@ -55,13 +60,13 @@ function sniffMime(buf: Buffer): string | null {
   if (startsWith(buf, [0x4f, 0x67, 0x67, 0x53])) return 'audio/ogg'
   // WebM / MKV (EBML) — l'audio webm
   if (startsWith(buf, [0x1a, 0x45, 0xdf, 0xa3])) return 'audio/webm'
-  // MP4 / M4A / AAC : boîte ftyp
+  // MP4 / M4A / AAC : boîte ftyp — la marque distingue la vidéo de l'audio
   if (startsWith(buf, [0x00, 0x00, 0x00], 0) && buf.length >= 12 && buf.toString('ascii', 4, 8) === 'ftyp') {
     const brand = buf.toString('ascii', 8, 12).toLowerCase()
     if (brand.startsWith('avi') || brand.startsWith('avif') || brand.startsWith('avis')) return 'image/avif'
-    if (brand.startsWith('m4a') || brand.startsWith('mp4') || brand.startsWith('isom') ||
-        brand.startsWith('mpeg') || brand.startsWith('dash')) return 'audio/mp4'
-    return 'audio/mp4'
+    if (brand.startsWith('m4a')) return 'audio/mp4'
+    // isom / iso2 / mp42 / avc1 / dash / msnv… : conteneur vidéo
+    return 'video/mp4'
   }
   return null
 }
@@ -88,21 +93,24 @@ export async function POST(req: Request) {
     const type = String(form.get('type') || 'image')
 
     if (!(file instanceof File)) return bad('Aucun fichier reçu.')
-    if (type !== 'image' && type !== 'audio') {
-      return bad('Type de média inconnu (image ou audio attendus).')
+    if (type !== 'image' && type !== 'audio' && type !== 'video') {
+      return bad('Type de média inconnu (image, audio ou vidéo attendus).')
     }
 
     const isImage = type === 'image'
-    const okTypes = isImage ? IMAGE_TYPES : AUDIO_TYPES
+    const isVideo = type === 'video'
+    const okTypes = isImage ? IMAGE_TYPES : isVideo ? VIDEO_TYPES : AUDIO_TYPES
     if (!okTypes.has(file.type)) {
       return bad(
         isImage
           ? 'Format d\'image non pris en charge (JPG, PNG, WebP, GIF ou AVIF attendus).'
-          : 'Format audio non pris en charge (MP3, WAV, M4A, OGG ou AAC attendus).',
+          : isVideo
+            ? 'Format vidéo non pris en charge (MP4 ou WebM attendus).'
+            : 'Format audio non pris en charge (MP3, WAV, M4A, OGG ou AAC attendus).',
       )
     }
 
-    const max = isImage ? IMAGE_MAX : AUDIO_MAX
+    const max = isImage ? IMAGE_MAX : isVideo ? VIDEO_MAX : AUDIO_MAX
     if (file.size > max) {
       return bad(`Fichier trop lourd (${Math.round(max / (1024 * 1024))} Mo maximum).`, 413)
     }
@@ -121,13 +129,15 @@ export async function POST(req: Request) {
       : sniffed === 'audio/x-wav' ? 'audio/wav'
       : sniffed
 
+    // Vidéo et audio passent par le même canal Cloudinary (resource_type
+    // « video », qui couvre les deux) — dossier distinct pour les créas pub
     const outcome = isImage
       ? await storeImage(buffer, file.name, verifiedType)
-      : await storeAudio(buffer, file.name, verifiedType)
+      : await storeAudio(buffer, file.name, verifiedType, isVideo ? 'topguinee/video' : undefined)
 
     await logAction(
       user,
-      isImage ? 'upload_image' : 'upload_audio',
+      isImage ? 'upload_image' : isVideo ? 'upload_video' : 'upload_audio',
       'media',
       null,
       `${file.name} → ${outcome.provider}`,

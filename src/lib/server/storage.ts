@@ -93,10 +93,10 @@ export async function uploadImageToCloudinary(
  * diffuse ensuite directement l'URL du CDN — plus de proxy serveur.
  */
 export async function uploadAudioToCloudinary(
-  buffer: Buffer, filename: string, mime: string, cfg: StorageConfig,
+  buffer: Buffer, filename: string, mime: string, cfg: StorageConfig, folderOverride?: string,
 ): Promise<{ url: string; publicId: string }> {
   const timestamp = Math.floor(Date.now() / 1000).toString()
-  const folder = `${CLOUDINARY_FOLDER}/audio`
+  const folder = folderOverride || `${CLOUDINARY_FOLDER}/audio`
   const params = { folder, timestamp }
   const signature = cloudinarySignature(params, cfg.cloudApiSecret)
 
@@ -370,13 +370,14 @@ export async function storeImage(buffer: Buffer, filename: string, mime: string)
   return { url: await saveLocal('uploads', buffer, filename, mime), provider: 'local' }
 }
 
-export async function storeAudio(buffer: Buffer, filename: string, mime: string): Promise<UploadOutcome> {
+export async function storeAudio(buffer: Buffer, filename: string, mime: string, folder?: string): Promise<UploadOutcome> {
   const cfg = await getStorageConfig()
   // Voie principale : Cloudinary (mêmes identifiants que les images) —
   // l'audio est servi directement par le CDN, sans proxy serveur.
+  // `folder` (optionnel) sépare les créas vidéo des podcasts.
   if (cloudinaryConfigured(cfg)) {
     try {
-      const { url } = await uploadAudioToCloudinary(buffer, filename, mime, cfg)
+      const { url } = await uploadAudioToCloudinary(buffer, filename, mime, cfg, folder)
       return { url, provider: 'cloudinary' }
     } catch (e) {
       console.error('[storage] Cloudinary audio indisponible, repli local :', e)

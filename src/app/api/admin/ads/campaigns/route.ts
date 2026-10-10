@@ -7,6 +7,17 @@ import { safeHttpUrl, safeMediaUrl } from '@/lib/sanitize'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * Lien de redirection fidèle : un lien saisi sans schéma (« www.exemple.com »)
+ * est complété en https:// AVANT validation — le clic publicitaire honore
+ * toujours la cible fournie par la rédaction.
+ */
+function normalizeLinkUrl(raw: unknown): string {
+  const s = String(raw ?? '').trim()
+  if (!s) return ''
+  return safeHttpUrl(/^https?:\/\//i.test(s) ? s : `https://${s}`)
+}
+
 export async function GET(req: Request) {
   try {
     const user = await requireUser(req)
@@ -55,7 +66,7 @@ export async function POST(req: Request) {
         title,
         imageUrl: body?.imageUrl ? safeMediaUrl(body.imageUrl) || null : null,
         // Cible de la bannière rendue cliquable sur le site public : http(s) obligatoire
-        linkUrl: safeHttpUrl(body?.linkUrl),
+        linkUrl: normalizeLinkUrl(body?.linkUrl),
         weight: Math.max(1, parseInt(String(body?.weight ?? 1), 10) || 1),
         startDate: parseDate(body?.startDate) ?? new Date(),
         endDate: parseDate(body?.endDate),

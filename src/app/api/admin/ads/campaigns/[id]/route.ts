@@ -43,7 +43,11 @@ export async function PUT(
       data.title = title
     }
     if (body?.imageUrl !== undefined) data.imageUrl = body.imageUrl ? safeMediaUrl(body.imageUrl) || null : null
-    if (body?.linkUrl !== undefined) data.linkUrl = safeHttpUrl(body.linkUrl)
+    // Lien de redirection fidèle : schéma manquant complété en https://
+    if (body?.linkUrl !== undefined) {
+      const s = String(body.linkUrl).trim()
+      data.linkUrl = safeHttpUrl(!s ? '' : /^https?:\/\//i.test(s) ? s : `https://${s}`)
+    }
     if (body?.weight !== undefined) data.weight = Math.max(1, parseInt(String(body.weight), 10) || 1)
     if (body?.startDate !== undefined) data.startDate = parseDate(body.startDate) ?? new Date()
     if (body?.endDate !== undefined) data.endDate = parseDate(body.endDate)

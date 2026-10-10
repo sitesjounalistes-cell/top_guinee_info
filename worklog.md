@@ -771,3 +771,44 @@ Corrections :
    restent prioritaires (urgence d'abord).
 3. Vérifié en base : fusion = 0 manuel + 6 titres récents → bandeau
    alimenté immédiatement.
+
+════════════════════════════════════════════════════════════════════
+ Tâche 20 — PARTAGE RICHE DES ARTICLES + PUBLICITÉS (GIF/VIDÉO/LIENS)
+════════════════════════════════════════════════════════════════════
+
+1) PARTAGE — cause racine : NEXT_PUBLIC_SITE_URL et metadataBase
+   pointaient vers topguinee.info, domaine NON DÉPLOYÉ (NXDOMAIN) →
+   og:url/og:image injoignables pour WhatsApp/Facebook/LinkedIn →
+   aperçu générique (nom de domaine seul).
+   - page article : origine déduite des EN-TÊTES réels de la requête
+     (x-forwarded-host) → og:url, og:image, twitter, JSON-LD toujours
+     fidèles à l'hôte servi (vercel.app aujourd'hui, domaine demain) ;
+   - og:image JAMAIS vide : cover → image SEO → og.jpg de marque,
+     toujours en URL absolue ;
+   - metadataBase du layout + .env/.env.example → URL Vercel réelle ;
+   - le domaine topguinee.info remplacera l'env le jour de son déploiement.
+
+2) CRÉAS PUB — « peu importe le type de fichier fourni » :
+   - GIF animés : déjà acceptés, servis BRUTS (optimiseur coupé →
+     l'animation est préservée) — confirmé ;
+   - VIDÉOS : nouveau type d'upload « video » (MP4/WebM/MOV, 40 Mo,
+     sniff binaire ftyp vidéo, dossier Cloudinary topguinee/video) ;
+     AdBanner rend <video autoplay muted loop> quand la créa est une
+     vidéo ; ImageDropzone gagne allowVideo (aperçu vidéo dans le
+     cockpit) activé pour les campagnes ;
+   - durcissement : un MP4 vidéo ne passe plus pour de l'audio.
+
+3) LIEN DE REDIRECTION FIDÈLE : un lien saisi sans schéma
+   (« www.exemple.com ») était neutralisé (clic mort). Désormais
+   complété en https:// à l'écriture (POST/PUT campagnes), toléré à
+   l'affichage (AdBanner), et les liens déjà en base ont été vérifiés.
+
+4) ENCARTS IDENTIQUES SUR TOUS LES ÉCRANS : la pub latérale de la vue
+   rubrique était masquée sous lg (invisible téléphone/tablette) →
+   désormais rendue en pleine largeur sous le contenu en mobile,
+   colonne latérale sur grand écran — alignée sur l'accueil et les
+   articles, déjà conformes. Header/footer/intercalaires : inchangés,
+   déjà responsives.
+
+Note exploitation : disque C: saturé — caches bun/npm purgés (~3,4 Go)
+pour permettre le build ; un nettoyage machine s'impose côté utilisateur.

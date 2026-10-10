@@ -343,9 +343,11 @@ export function FlashTicker({ items }: { items: { id: string; text: string; arti
 
 export function AdBanner({ banner, position, className }: { banner?: AdBannerData | null; position: string; className?: string }) {
   if (!banner || !banner.imageUrl) return null
-  // Cible revalidée au rendu : seules les URLs http(s) sont cliquables
-  // (un « javascript: » injecté en base ne s'exécuterait jamais ici)
-  const href = safeHttpUrl(banner.linkUrl)
+  // Cible révalidée au rendu : seules les URLs http(s) sont cliquables
+  // (un « javascript: » injecté en base ne s'exécuterait jamais ici).
+  // Tolérance d'usage : un lien saisi sans schéma (« www.exemple.com »)
+  // est complété en https:// pour que le clic honore la redirection.
+  const href = adLinkOf(banner.linkUrl)
   const click = () => {
     fetch(`/api/public/ads/${banner.id}/click`, { method: 'POST' }).catch(() => {})
   }
@@ -362,13 +364,39 @@ export function AdBanner({ banner, position, className }: { banner?: AdBannerDat
       aria-label={`Publicité : ${banner.title}`}
     >
       <div className={cn('relative w-full overflow-hidden', formatClass)}>
-        <FadeImage src={banner.imageUrl} alt={banner.title} fill sizes="(max-width:768px) 100vw, 728px" className="tg-zoom" />
+        {isVideoSrc(banner.imageUrl) ? (
+          // Créa vidéo : lecture automatique en boucle, sans son (norme pub)
+          <video
+            src={banner.imageUrl}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay muted loop playsInline preload="metadata"
+            aria-label={banner.title}
+          />
+        ) : (
+          // Créa image ou GIF animé — servi brut (optimiseur coupé : le
+          // GIF reste animé, « peu importe le type de fichier fourni »)
+          <FadeImage src={banner.imageUrl} alt={banner.title} fill sizes="(max-width:768px) 100vw, 728px" className="tg-zoom" />
+        )}
       </div>
       <span className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-zinc-500 text-[8.5px] font-semibold uppercase tracking-[0.2em] px-2 py-1 rounded-sm">
         Publicité
       </span>
     </a>
   )
+}
+
+/** Créa vidéo ? MP4/WebM/MOV, ou média Cloudinary de type video. */
+function isVideoSrc(url: string): boolean {
+  const u = url.toLowerCase()
+  return /\.(mp4|m4v|webm|mov)(\?|$)/.test(u) || u.includes('/video/upload/')
+}
+
+/** Lien de redirection cliquable : complète le schéma manquant. */
+function adLinkOf(raw?: string | null): string {
+  const s = (raw || '').trim()
+  if (!s || s.length > 2048) return ''
+  const withScheme = /^https?:\/\//i.test(s) ? s : `https://${s}`
+  return safeHttpUrl(withScheme)
 }
 
 // ─── Partage social (§4.6) ────────────────────────────────────────

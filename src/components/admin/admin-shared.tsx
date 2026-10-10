@@ -259,7 +259,7 @@ export function fromInputDate(v: string): string | undefined {
 
 // ─── Zone d'upload image (drag & drop §7.5) ───────────────────────
 
-export function ImageDropzone({ value, onChange, alt, onAltChange, aspect = 'aspect-video', label = 'Image de couverture', hint = 'PNG, JPG ou WebP — 5 Mo max' }: {
+export function ImageDropzone({ value, onChange, alt, onAltChange, aspect = 'aspect-video', label = 'Image de couverture', hint = 'PNG, JPG ou WebP — 5 Mo max', allowVideo = false }: {
   value?: string | null
   onChange: (url: string | null) => void
   alt?: string
@@ -267,23 +267,34 @@ export function ImageDropzone({ value, onChange, alt, onAltChange, aspect = 'asp
   aspect?: string
   label?: string
   hint?: string
+  /** Créas publicitaires : GIF animés et vidéos MP4/WebM acceptés */
+  allowVideo?: boolean
 }) {
   const [busy, setBusy] = useState(false)
   const [drag, setDrag] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const isVideo = (f: File) => allowVideo && /^video\/(mp4|webm|quicktime)$/.test(f.type)
+
   const handleFile = async (file?: File | null) => {
     if (!file) return
     setError('')
-    if (!file.type.startsWith('image/')) { setError('Fichier non reconnu : choisissez une image.'); return }
-    if (file.size > 5 * 1024 * 1024) { setError('Image trop lourde (5 Mo maximum).'); return }
+    const video = isVideo(file)
+    if (!file.type.startsWith('image/') && !video) {
+      setError(allowVideo
+        ? 'Fichier non reconnu : choisissez une image (GIF animé accepté) ou une vidéo MP4/WebM.'
+        : 'Fichier non reconnu : choisissez une image.')
+      return
+    }
+    const max = video ? 40 * 1024 * 1024 : 5 * 1024 * 1024
+    if (file.size > max) { setError(video ? 'Vidéo trop lourde (40 Mo maximum).' : 'Image trop lourde (5 Mo maximum).'); return }
     setBusy(true)
     try {
-      const res = await uploadFile(file, 'image')
+      const res = await uploadFile(file, video ? 'video' : 'image')
       onChange(res.url)
-      if (res.warning) toast.warning('Image importée avec réserve', { description: res.warning })
-      else if (res.provider === 'cloudinary') toast.success('Image transférée sur Cloudinary')
+      if (res.warning) toast.warning('Média importé avec réserve', { description: res.warning })
+      else if (res.provider === 'cloudinary') toast.success(video ? 'Vidéo transférée sur Cloudinary' : 'Image transférée sur Cloudinary')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Échec de l\'envoi.')
     } finally {
@@ -291,18 +302,24 @@ export function ImageDropzone({ value, onChange, alt, onAltChange, aspect = 'asp
     }
   }
 
+  const valueIsVideo = allowVideo && !!value && (/\.mp4|\.webm|\.mov(\?|$)/i.test(value) || value.includes('/video/upload/'))
+
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-tg-navy">{label}</Label>
       {value ? (
         <div className="space-y-2">
-          <div className={cn('relative w-full rounded-xl overflow-hidden border border-zinc-200 group', aspect)}>
-            <FadeImage src={value} alt={alt || label} fill sizes="600px" />
+          <div className={cn('relative w-full rounded-xl overflow-hidden border border-zinc-200 group bg-black/5', aspect)}>
+            {valueIsVideo ? (
+              <video src={value} className="absolute inset-0 w-full h-full object-contain" controls muted playsInline preload="metadata" />
+            ) : (
+              <FadeImage src={value} alt={alt || label} fill sizes="600px" />
+            )}
             <button
               type="button"
               onClick={() => onChange(null)}
               className="absolute top-2 right-2 bg-tg-red text-white rounded-full p-1.5 shadow-md hover:bg-tg-red-dark transition-colors"
-              aria-label="Supprimer l'image"
+              aria-label="Supprimer le média"
             >
               <X size={14} />
             </button>
@@ -327,13 +344,13 @@ export function ImageDropzone({ value, onChange, alt, onAltChange, aspect = 'asp
           )}
         >
           {busy ? <Loader2 size={26} className="text-tg-red animate-spin" /> : <CloudUpload size={26} className="text-zinc-400" />}
-          <span className="text-sm font-medium text-tg-navy">{busy ? 'Envoi en cours…' : 'Glissez une image ici ou cliquez pour parcourir'}</span>
+          <span className="text-sm font-medium text-tg-navy">{busy ? 'Envoi en cours…' : allowVideo ? 'Glissez un média ici ou cliquez pour parcourir' : 'Glissez une image ici ou cliquez pour parcourir'}</span>
           <span className="text-xs text-muted-foreground">{hint}</span>
         </button>
       )}
       {error && <p className="text-xs text-tg-red font-medium">{error}</p>}
       <input
-        ref={inputRef} type="file" accept="image/*" className="hidden"
+        ref={inputRef} type="file" accept={allowVideo ? 'image/*,video/mp4,video/webm' : 'image/*'} className="hidden"
         onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = '' }}
       />
     </div>
