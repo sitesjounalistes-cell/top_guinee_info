@@ -7,7 +7,7 @@ import { navigate } from '@/lib/router'
 import { sanitizeRichText, safeHttpUrl } from '@/lib/sanitize'
 import { youtubeId, YouTubeEmbed, FadeImage, RichText } from '@/components/tg/shared'
 import type { ArticleFull, ArticleStatus, Rubrique, TgUser } from '@/lib/types'
-import { ImageDropzone, RichInput, toInputDate } from './admin-shared'
+import { FONT_CHOICES, ImageDropzone, RichInput, toInputDate } from './admin-shared'
 import { stripHtml, type FontClass } from '@/lib/sanitize'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -430,10 +430,9 @@ export function ArticleEditor({ id, user }: { id?: string | null; user: TgUser |
         onChange={(e) => { if (e.target.value) applyFontToBody(e.target.value as FontClass); e.target.selectedIndex = 0 }}
       >
         <option value="" disabled>Police…</option>
-        <option value="font-sans">Sans (Inter)</option>
-        <option value="font-display">Éditorial (Playfair)</option>
-        <option value="font-serif">Serif (Georgia)</option>
-        <option value="font-mono">Mono</option>
+        {FONT_CHOICES.map((f) => (
+          <option key={f.value} value={f.value} style={{ fontFamily: f.family }}>{f.label}</option>
+        ))}
       </select>
       <span className="w-px h-5 bg-zinc-200 mx-1" aria-hidden />
       <button type="button" className={TOOL_BTN} title="Liste à puces" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('insertUnorderedList')}><List size={15} /></button>

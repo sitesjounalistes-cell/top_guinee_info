@@ -19,12 +19,38 @@ import {
 
 // ─── Champ court enrichi : gras / italique / souligné / police ────
 
-const FONT_CHOICES: { value: FontClass; label: string }[] = [
-  { value: 'font-sans', label: 'Sans (Inter)' },
-  { value: 'font-display', label: 'Éditorial (Playfair)' },
-  { value: 'font-serif', label: 'Serif (Georgia)' },
-  { value: 'font-mono', label: 'Mono' },
+/** Catalogue éditorial — chaque option s'affiche dans SA police. */
+export const FONT_CHOICES: { value: FontClass; label: string; family: string }[] = [
+  { value: 'font-sans', label: 'Moderne (Inter)', family: 'var(--font-inter), sans-serif' },
+  { value: 'font-display', label: 'Éditorial (Playfair)', family: 'var(--font-playfair), serif' },
+  { value: 'font-lora', label: 'Presse (Lora)', family: 'var(--font-lora), serif' },
+  { value: 'font-merriweather', label: 'Classique (Merriweather)', family: 'var(--font-merriweather), serif' },
+  { value: 'font-roboto-slab', label: 'Solide (Roboto Slab)', family: 'var(--font-roboto-slab), serif' },
+  { value: 'font-serif', label: 'Serif système (Georgia)', family: 'Georgia, serif' },
+  { value: 'font-oswald', label: 'Condensé (Oswald)', family: 'var(--font-oswald), sans-serif' },
+  { value: 'font-bebas', label: 'Impact (Bebas Neue)', family: 'var(--font-bebas), sans-serif' },
+  { value: 'font-montserrat', label: 'Géométrique (Montserrat)', family: 'var(--font-montserrat), sans-serif' },
+  { value: 'font-poppins', label: 'Arrondi (Poppins)', family: 'var(--font-poppins), sans-serif' },
+  { value: 'font-grotesk', label: 'Contemporain (Space Grotesk)', family: 'var(--font-grotesk), sans-serif' },
+  { value: 'font-mono', label: 'Machine à écrire (Mono)', family: 'ui-monospace, monospace' },
 ]
+
+/** Sélecteur de famille (titres, chapeaux, corps) — options prévisualisées. */
+export function FontSelect({ onPick, className }: { onPick: (font: FontClass) => void; className?: string }) {
+  return (
+    <select
+      className={cn('h-7 text-[12px] rounded-md border border-zinc-200 bg-white px-1.5 text-tg-navy hover:border-tg-red/40 cursor-pointer', className)}
+      title="Famille de police de la sélection"
+      defaultValue=""
+      onChange={(e) => { if (e.target.value) onPick(e.target.value as FontClass); e.target.selectedIndex = 0 }}
+    >
+      <option value="" disabled>Police…</option>
+      {FONT_CHOICES.map((f) => (
+        <option key={f.value} value={f.value} style={{ fontFamily: f.family }}>{f.label}</option>
+      ))}
+    </select>
+  )
+}
 
 /**
  * Champ texte court avec mise en forme : titre, sous-titre, description…
@@ -95,15 +121,7 @@ export function RichInput({ value, onChange, placeholder, ariaLabel, multiline =
         <button type="button" className={TOOL_BTN} title="Italique" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('italic')}><ItalicIcon size={14} /></button>
         <button type="button" className={TOOL_BTN} title="Souligné" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('underline')}><UnderlineIcon size={14} /></button>
         <span className="w-px h-4 bg-zinc-200 mx-0.5" aria-hidden />
-        <select
-          className="h-7 text-[12px] rounded-md border border-zinc-200 bg-white px-1.5 text-tg-navy hover:border-tg-red/40 cursor-pointer"
-          title="Famille de police"
-          defaultValue=""
-          onChange={(e) => { if (e.target.value) applyFont(e.target.value as FontClass); e.target.selectedIndex = 0 }}
-        >
-          <option value="" disabled>Police…</option>
-          {FONT_CHOICES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-        </select>
+        <FontSelect onPick={applyFont} />
       </div>
       <div
         ref={ref}

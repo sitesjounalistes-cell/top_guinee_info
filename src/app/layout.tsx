@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Inter, Lora, Merriweather, Roboto_Slab, Oswald, Montserrat, Poppins, Space_Grotesk, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 /* Typographie éditoriale premium :
    — Playfair Display : titres de presse (didone à fort contraste)
-   — Inter : interface et textes courants */
+   — Inter : interface et textes courants
+   — Catalogue étendu (choisissable dans l'éditeur sur titres, chapeaux
+     et corps) : chaque famille n'est téléchargée par le visiteur QUE
+     si elle est réellement utilisée dans un contenu publié */
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
@@ -17,6 +20,15 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
 });
+
+const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap" });
+const merriweather = Merriweather({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-merriweather", display: "swap" });
+const robotoSlab = Roboto_Slab({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-roboto-slab", display: "swap" });
+const oswald = Oswald({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-oswald", display: "swap" });
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-montserrat", display: "swap" });
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins", display: "swap" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-grotesk", display: "swap" });
+const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-bebas", display: "swap" });
 
 export const metadata: Metadata = {
   // Base de résolution des URLs relatives (og:image du layout racine).
@@ -60,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="fr" suppressHydrationWarning className={`${playfair.variable} ${inter.variable} ${lora.variable} ${merriweather.variable} ${robotoSlab.variable} ${oswald.variable} ${montserrat.variable} ${poppins.variable} ${spaceGrotesk.variable} ${bebasNeue.variable}`}>
       <body className="antialiased bg-background text-foreground font-sans">
         {children}
         <Toaster />

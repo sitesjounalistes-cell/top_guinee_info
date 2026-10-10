@@ -22,6 +22,18 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-serif: Georgia, "Times New Roman", serif;
+
+  /* ── Catalogue éditorial (choisissable par la rédaction sur les
+     titres, chapeaux et corps) — chaque fichier woff2 n'est téléchargé
+     par le navigateur QUE si la famille est réellement utilisée ── */
+  --font-lora: var(--font-lora), Georgia, serif;
+  --font-merriweather: var(--font-merriweather), Georgia, serif;
+  --font-roboto-slab: var(--font-roboto-slab), Georgia, serif;
+  --font-oswald: var(--font-oswald), "Arial Narrow", sans-serif;
+  --font-montserrat: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-poppins: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-grotesk: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-bebas: var(--font-bebas), "Arial Narrow", sans-serif;
 }
 
 @theme inline {

@@ -11,8 +11,15 @@ import sanitizeHtml from 'sanitize-html'
 
 // Familles de polices ouvertes aux rédacteurs (§ mise en forme riche) :
 // seules ces classes peuvent figurer dans un attribut class — tout autre
-// nom de classe est retiré par sanitize-html.
-export const FONT_CLASSES = ['font-display', 'font-serif', 'font-sans', 'font-mono'] as const
+// nom de classe est retiré par sanitize-html. Le catalogue correspond
+// aux familles chargées dans src/app/layout.tsx (next/font) et exposées
+// par src/app/globals.css (@theme → utilitaires .font-*).
+export const FONT_CLASSES = [
+  'font-sans', 'font-display', 'font-serif', 'font-mono',
+  'font-lora', 'font-merriweather', 'font-roboto-slab',
+  'font-oswald', 'font-montserrat', 'font-poppins',
+  'font-grotesk', 'font-bebas',
+] as const
 export type FontClass = (typeof FONT_CLASSES)[number]
 
 const FONT_CLASS_SET: Record<string, string[]> = {

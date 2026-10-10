@@ -836,3 +836,30 @@ Corrections :
   (WhatsApp/Facebook/LinkedIn) : procédure d'invalidation transmise
   (Facebook Sharing Debugger « Scrape Again », LinkedIn Post Inspector,
   nouveau chat WhatsApp) — le serveur, lui, est vérifié conforme.
+
+════════════════════════════════════════════════════════════════════
+ Tâche 22 — CATALOGUE ÉDITORIAL DE POLICES (12 FAMILLES)
+════════════════════════════════════════════════════════════════════
+
+Demande : pouvoir choisir entre plusieurs polices sur le TITRE, le
+CHAPEAU et le CORPS des articles.
+
+- 8 nouvelles familles Google chargées via next/font (auto-hébergées,
+  woff2 téléchargé par le visiteur UNIQUEMENT si utilisée) :
+  Lora, Merriweather, Roboto Slab, Oswald, Montserrat, Poppins,
+  Space Grotesk, Bebas Neue — en plus d'Inter et Playfair Display
+- tokens @theme (globals.css) → utilitaires .font-lora, .font-oswald…
+  disponibles partout (cockpit ET site public)
+- FONT_CLASSES (sanitize) étendu : la liste blanche XSS accepte les
+  12 familles — rien d'autre ne passe, toujours
+- FontSelect partagé (admin-shared) : chaque option s'affiche dans SA
+  police (prévisualisation directe) ; utilisé par les champs riches
+  titre/chapeau/description ET par la barre d'outils du corps (la
+  copie en dur de l'éditeur est supprimée)
+- catégories couvertes : moderne, éditorial, presse, classique, slab,
+  serif système, condensé, impact, géométrique, arrondi, contemporain,
+  machine à écrire
+
+Note build : le téléchargement des polices échoue sous le runtime BUN
+(bug Turbopack/next/font) — builder en NODE (npx next build / npm run
+build). Vercel (npm/Node) n'est pas concerné.
